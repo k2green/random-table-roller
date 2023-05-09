@@ -50,6 +50,7 @@ textarea {
   border-radius: 10px;
   color: #f6f6f6;
   font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
+  margin-top: 5px;
 }
 
 input {
@@ -72,6 +73,12 @@ button {
 button:hover {
   background-color: #D97F05;
   border-color: #F29E02;
+}
+
+button:disabled {
+  background-color: #8b5d1b;
+  border-color: #996c19;
+  color: #858585;
 }
 
 table {
@@ -290,4 +297,8 @@ svg.stroke-colour {
 
 .modal p {
   margin: 0px;
+}
+
+.heading {
+  text-align: center;
 }

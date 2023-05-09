@@ -78,7 +78,7 @@ fn get_table_content(tables: UseTablesHandle) -> Html {
 fn render_welcome_content() -> Html {
     html! {
         <div class="flex-column flex-grow-1">
-            <h1>{"Welcome!"}</h1>
+            <h1 class="heading">{"Welcome!"}</h1>
         </div>
     }
 }
@@ -184,7 +184,7 @@ fn roll_results_modal(props: &RollResultsProps) -> Html {
 
     html! {
         <Modal>
-            <h3>{"Results"}</h3>
+            <h3 class="heading">{"Results"}</h3>
             <div class="scroll flex-grow-1">
                 <table class="stretch-width blank">
                     {entries}
@@ -287,7 +287,7 @@ fn random_roll_modal(props: &RandomRollModalProps) -> Html {
 
     html! {
         <Modal>
-            <h3>{"Add entries"}</h3>
+            <h3 class="heading">{"Add entries"}</h3>
             <table class="stretch-width blank">
                 <tr>
                     <td><p>{"Number of rolls:"}</p></td>
@@ -350,7 +350,7 @@ fn add_entry_modal(props: &AddEntryModalProps) -> Html {
 
     html! {
         <Modal>
-            <h3>{"Add entries"}</h3>
+            <h3 class="heading">{"Add entries"}</h3>
             <p class="restrict-width">{"This is where you add new entries to your table. Multiple entries can be added by separating them onto new lines and empty lines will be ignored."}</p>
             <textarea onchange={update_text}>{&*text}</textarea>
             <div class="flex-row button-row">

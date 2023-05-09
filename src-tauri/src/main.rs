@@ -3,7 +3,7 @@
 
 pub mod logging;
 
-use std::{collections::HashMap, sync::{Mutex, MutexGuard}};
+use std::{collections::HashMap, sync::{Mutex, MutexGuard}, cmp::Ordering};
 
 use common_data::{BackendError, Table, IdNamePair, TableData, RollResult};
 use log::SetLoggerError;
@@ -41,7 +41,11 @@ fn log_result<T, E: std::fmt::Display>(result: Result<T, E>) -> Result<T, E> {
 fn get_tables(state: State<AppState>) -> Result<Vec<IdNamePair>, BackendError> {
     log::info!("Getting tables...");
     let tables = log_result(state.lock_tables())?;
-    let ids = tables.iter()
+    let mut table_vec = tables.iter().collect::<Vec<_>>();
+
+    table_vec.sort_by(|(_, a), (_, b)| table_order(a, b));
+
+    let ids = table_vec.into_iter()
         .filter_map(|(k, v)| match v.get_data() {
             Err(_) => None,
             Ok(data) => Some(IdNamePair::new(*k, data.name().to_string()))
@@ -49,6 +53,20 @@ fn get_tables(state: State<AppState>) -> Result<Vec<IdNamePair>, BackendError> {
         .collect::<Vec<_>>();
 
     Ok(ids)
+}
+
+fn table_order(a: &Table, b: &Table) -> Ordering {
+    let a_guard = match a.get_data() {
+        Ok(guard) => guard,
+        Err(_) => return Ordering::Equal
+    };
+
+    let b_guard = match b.get_data() {
+        Ok(guard) => guard,
+        Err(_) => return Ordering::Equal
+    };
+
+    a_guard.order().cmp(&b_guard.order())
 }
 
 #[tauri::command]
@@ -62,12 +80,23 @@ fn get_table(state: State<AppState>, id: Uuid) -> Result<Table, BackendError> {
 }
 
 #[tauri::command]
-fn new_table(state: State<AppState>, name: String) -> Result<Uuid, BackendError> {
+fn new_table(state: State<AppState>, name: String, entries: String) -> Result<Uuid, BackendError> {
     log::info!("Adding new table with name '{}'...", &name);
     let mut tables = log_result(state.lock_tables())?;
 
-    let (id, table) = Table::new(name);
-    tables.insert(id, table);
+    let mut table_data = TableData::new(name, tables.len());
+    let id = table_data.id();
+
+    for line in entries.lines() {
+        let trimmed = line.trim();
+
+        if !trimmed.is_empty() {
+            table_data.push(trimmed);
+        }
+    }
+
+    table_data.sort();
+    tables.insert(id, Table::from(table_data));
 
     Ok(id)
 }
@@ -94,6 +123,8 @@ fn add_entries(state: State<AppState>, id: Uuid, entries: String) -> Result<(), 
             data.push(line);
         }
     }
+
+    data.sort();
 
     Ok(())
 }
@@ -143,7 +174,7 @@ fn get_test_state() -> AppState {
     let mut tables = HashMap::new();
 
     for i in 0..5 {
-        let mut table = TableData::new(format!("Test table {}", i));
+        let mut table = TableData::new(format!("Test table {}", i), tables.len());
         let id = table.id();
 
         for j in 0..10 {
@@ -165,7 +196,7 @@ fn main() -> Result<(), SetLoggerError> {
     log::info!("Starting backend...");
 
     tauri::Builder::default()
-        .manage(get_test_state())
+        .manage(AppState::default())
         .invoke_handler(tauri::generate_handler![
             get_tables,
             get_table,
