@@ -16,6 +16,9 @@ js-sys = "0.3"
 uuid = { version = "1.3.2", features = ["v4", "js", "fast-rng", "serde", "wasm-bindgen"] }
 log = "0.4.17"
 wasm-logger = "0.2.0"
+yew_icons = { version = "0.7.2", features = [
+    "LucideMenu"
+]}
 
 [workspace]
 members = [
