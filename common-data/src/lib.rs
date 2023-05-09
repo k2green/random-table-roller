@@ -93,6 +93,7 @@ impl RollResult {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TableData {
     id: Uuid,
+    #[serde(skip)]
     order: usize,
     name: String,
     entries: Vec<String>

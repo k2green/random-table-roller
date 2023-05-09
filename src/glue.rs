@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use common_data::{IdNamePair, TableData, RollResult};
 use serde::Serialize;
 use uuid::Uuid;
@@ -118,6 +120,55 @@ pub fn get_random_set_with_callback(id: Uuid, count: usize, allow_duplicates: bo
     wasm_bindgen_futures::spawn_local(emit_callback_if_ok(get_random_set(id, count, allow_duplicates), callback.into()));
 }
 
+#[derive(Debug, Clone, Serialize)]
+struct DialogFilter {
+    name: String,
+    extensions: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+struct SaveTableArgs {
+    id: Uuid,
+    path: PathBuf
+}
+
+pub async fn save_table(id: Uuid, path: PathBuf) -> Result<(), Error> {
+    let args = serde_wasm_bindgen::to_value(&SaveTableArgs { id, path }).map_err_and_log(Error::SerdeWasmBindgenError)?;
+    unit_from_result(invoke("save_table", args).await)
+}
+
+pub fn save_table_with_callback(id: Uuid, path: PathBuf, callback: impl Into<Callback<()>>) {
+    wasm_bindgen_futures::spawn_local(emit_callback_if_ok(save_table(id, path), callback.into()));
+}
+
+#[derive(Debug, Clone, Serialize)]
+struct SaveDialogArgs {
+    title: Option<String>,
+    #[serde(rename = "defaultPath")]
+    default_path: Option<String>,
+    filters: Option<Vec<DialogFilter>>
+}
+
+pub async fn get_save_table_path() -> Result<Option<PathBuf>, Error> {
+    let args = SaveDialogArgs {
+        title: None,
+        default_path: None,
+        filters: Some(vec![
+            DialogFilter {
+                name: "Table".into(),
+                extensions: vec!["table".into()]
+            }
+        ])
+    };
+
+    let args = serde_wasm_bindgen::to_value(&args).map_err(Error::SerdeWasmBindgenError)?;
+    serde_wasm_bindgen::from_value(save(args).await).map_err(Error::SerdeWasmBindgenError)
+}
+
+pub fn get_save_table_path_with_callback(callback: impl Into<Callback<Option<PathBuf>>>) {
+    wasm_bindgen_futures::spawn_local(emit_callback_if_ok(get_save_table_path(), callback.into()));
+}
+
 fn unit_from_result(result: Result<JsValue, JsValue>) -> Result<(), Error> {
     match result {
         Ok(_) => Ok(()),
@@ -156,4 +207,7 @@ extern "C" {
 
     #[wasm_bindgen(js_namespace = ["window", "__TAURI__", "tauri"], catch)]
     async fn invoke(cmd: &str, args: JsValue) -> Result<JsValue, JsValue>;
+
+    #[wasm_bindgen(js_namespace = ["window", "__TAURI__", "dialog"])]
+    async fn save(args: JsValue) -> JsValue;
 }

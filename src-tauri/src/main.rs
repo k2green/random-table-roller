@@ -3,7 +3,7 @@
 
 pub mod logging;
 
-use std::{collections::HashMap, sync::{Mutex, MutexGuard}, cmp::Ordering};
+use std::{collections::HashMap, sync::{Mutex, MutexGuard}, cmp::Ordering, path::PathBuf, fs::{OpenOptions, self, File}};
 
 use common_data::{BackendError, Table, IdNamePair, TableData, RollResult};
 use log::SetLoggerError;
@@ -170,6 +170,24 @@ fn get_random_set(state: State<AppState>, id: Uuid, count: usize, allow_duplicat
     Ok(entry)
 }
 
+#[tauri::command]
+fn save_table(state: State<AppState>, id: Uuid, path: PathBuf) -> Result<(), BackendError> {
+    let tables = log_result(state.lock_tables())?;
+    let table = log_result(tables.get(&id)
+        .ok_or(BackendError::argument_error("id", format!("Could not find table with id '{}'", id))))?;
+
+    if let Some(parent) = path.parent() {
+        if !parent.exists() {
+            fs::create_dir_all(parent).map_err(BackendError::from)?;
+        }
+    }
+
+    let file = File::create(path).map_err(BackendError::from)?;
+    serde_json::to_writer_pretty(file, table).map_err(BackendError::from)?;
+
+    Ok(())
+}
+
 fn get_test_state() -> AppState {
     let mut tables = HashMap::new();
 
@@ -206,6 +224,7 @@ fn main() -> Result<(), SetLoggerError> {
             remove_entry,
             get_random,
             get_random_set,
+            save_table,
         ])
         .setup(|app| {
             #[cfg(debug_assertions)] // only include this code on debug builds
