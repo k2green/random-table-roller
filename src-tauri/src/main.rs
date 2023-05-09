@@ -37,11 +37,6 @@ fn log_result<T, E: std::fmt::Display>(result: Result<T, E>) -> Result<T, E> {
     result
 }
 
-fn log_error<E: std::fmt::Display>(error: E) -> E {
-    log::error!("{}", &error);
-    error
-}
-
 #[tauri::command]
 fn get_tables(state: State<AppState>) -> Result<Vec<IdNamePair>, BackendError> {
     log::info!("Getting tables...");
@@ -60,10 +55,10 @@ fn get_tables(state: State<AppState>) -> Result<Vec<IdNamePair>, BackendError> {
 fn get_table(state: State<AppState>, id: Uuid) -> Result<Table, BackendError> {
     log::info!("Getting table with id '{}'...", id);
     let tables = log_result(state.lock_tables())?;
-    match tables.get(&id) {
+    log_result(match tables.get(&id) {
         Some(table) => Ok(table.clone()),
-        None => Err(log_error(BackendError::argument_error("id", format!("Could not find table with id '{}'", id))))
-    }
+        None => Err(BackendError::argument_error("id", format!("Could not find table with id '{}'", id)))
+    })
 }
 
 #[tauri::command]
@@ -81,18 +76,24 @@ fn new_table(state: State<AppState>, name: String) -> Result<Uuid, BackendError>
 fn remove_table(state: State<AppState>, id: Uuid) -> Result<Table, BackendError> {
     log::info!("Removing table with id '{}'...", id);
     let mut tables = log_result(state.lock_tables())?;
-    tables.remove(&id).ok_or(log_error(BackendError::argument_error("id", format!("Could not find table with id '{}'", id))))
+    log_result(tables.remove(&id).ok_or(BackendError::argument_error("id", format!("Could not find table with id '{}'", id))))
 }
 
 #[tauri::command]
-fn insert_entry(state: State<AppState>, id: Uuid, entry: String) -> Result<(), BackendError> {
-    log::info!("Adding '{}' to table with id '{}'...", &entry, id);
+fn add_entries(state: State<AppState>, id: Uuid, entries: String) -> Result<(), BackendError> {
+    log::info!("Adding '{:?}' to table with id '{}'...", &entries, id);
     let mut tables = log_result(state.lock_tables())?;
-    let table = tables.get_mut(&id)
-        .ok_or(log_error(BackendError::argument_error("id", format!("Could not find table with id '{}'", id))))?;
+    let table = log_result(tables.get_mut(&id)
+        .ok_or(BackendError::argument_error("id", format!("Could not find table with id '{}'", id))))?;
 
     let mut data = table.get_data()?;
-    data.push(entry);
+    for line in entries.lines() {
+        let trimmed = line.trim();
+
+        if !trimmed.is_empty() {
+            data.push(line);
+        }
+    }
 
     Ok(())
 }
@@ -101,24 +102,24 @@ fn insert_entry(state: State<AppState>, id: Uuid, entry: String) -> Result<(), B
 fn remove_entry(state: State<AppState>, id: Uuid, index: usize) -> Result<String, BackendError> {
     log::info!("Removing entry {} from table with id '{}'...", index, id);
     let mut tables = log_result(state.lock_tables())?;
-    let table = tables.get_mut(&id)
-        .ok_or(log_error(BackendError::argument_error("id", format!("Could not find table with id '{}'", id))))?;
+    let table = log_result(tables.get_mut(&id)
+        .ok_or(BackendError::argument_error("id", format!("Could not find table with id '{}'", id))))?;
 
     let mut data = table.get_data()?;
     
-    data.remove(index)
-        .ok_or(log_error(BackendError::argument_error("index", format!("Could not find entry with index '{}'", index))))
+    log_result(data.remove(index)
+        .ok_or(BackendError::argument_error("index", format!("Could not find entry with index '{}'", index))))
 }
 
 #[tauri::command]
 fn get_random(state: State<AppState>, id: Uuid) -> Result<String, BackendError> {
     log::info!("Getting random entry from table with id '{}'...", id);
     let tables = log_result(state.lock_tables())?;
-    let table = tables.get(&id)
-        .ok_or(log_error(BackendError::argument_error("id", format!("Could not find table with id '{}'", id))))?;
+    let table = log_result(tables.get(&id)
+        .ok_or(BackendError::argument_error("id", format!("Could not find table with id '{}'", id))))?;
 
     let data = table.get_data()?;
-    let entry = data.get_random().map_err(|e| log_error(BackendError::from(e)))?;
+    let entry = log_result(data.get_random().map_err(|e| BackendError::from(e)))?;
 
     Ok(entry.to_string())
 }
@@ -127,11 +128,11 @@ fn get_random(state: State<AppState>, id: Uuid) -> Result<String, BackendError> 
 fn get_random_set(state: State<AppState>, id: Uuid, count: usize, allow_duplicates: bool) -> Result<Vec<String>, BackendError> {
     log::info!("Getting {} random entries from table with id '{}'...", count, id);
     let tables = log_result(state.lock_tables())?;
-    let table = tables.get(&id)
-        .ok_or(log_error(BackendError::argument_error("id", format!("Could not find table with id '{}'", id))))?;
+    let table = log_result(tables.get(&id)
+        .ok_or(BackendError::argument_error("id", format!("Could not find table with id '{}'", id))))?;
 
     let data = table.get_data()?;
-    let entry = data.get_random_set(count, allow_duplicates).map_err(|e| log_error(BackendError::from(e)))?;
+    let entry = log_result(data.get_random_set(count, allow_duplicates).map_err(|e| BackendError::from(e)))?;
 
     Ok(entry.into_iter().map(|e| e.to_string()).collect())
 }
@@ -168,7 +169,7 @@ fn main() -> Result<(), SetLoggerError> {
             get_table,
             new_table,
             remove_table,
-            insert_entry,
+            add_entries,
             remove_entry,
             get_random,
             get_random_set,
