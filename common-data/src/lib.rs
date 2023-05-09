@@ -29,6 +29,14 @@ pub struct Table {
     data: Arc<Mutex<TableData>>
 }
 
+impl From<TableData> for Table {
+    fn from(value: TableData) -> Self {
+        Self {
+            data: Arc::new(Mutex::new(value))
+        }
+    }
+}
+
 impl Serialize for Table {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where

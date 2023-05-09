@@ -1,6 +1,7 @@
 mod app;
 pub mod glue;
 pub mod components;
+pub mod hooks;
 
 use std::future::Future;
 
