@@ -178,12 +178,25 @@ fn save_table(state: State<AppState>, id: Uuid, path: PathBuf) -> Result<(), Bac
 
     if let Some(parent) = path.parent() {
         if !parent.exists() {
-            fs::create_dir_all(parent).map_err(BackendError::from)?;
+            log_result(fs::create_dir_all(parent).map_err(BackendError::from))?;
         }
     }
 
-    let file = File::create(path).map_err(BackendError::from)?;
-    serde_json::to_writer_pretty(file, table).map_err(BackendError::from)?;
+    let file = log_result(File::create(path).map_err(BackendError::from))?;
+    log_result(serde_json::to_writer_pretty(file, table).map_err(BackendError::from))?;
+
+    Ok(())
+}
+
+#[tauri::command]
+fn open_table(state: State<AppState>, path: PathBuf) -> Result<(), BackendError> {
+    let mut tables = log_result(state.lock_tables())?;
+    let file = log_result(File::open(path).map_err(BackendError::from))?;
+    let mut table_data: TableData = log_result(serde_json::from_reader(file).map_err(BackendError::from))?;
+    let id = table_data.id();
+
+    table_data.set_order(tables.len());
+    tables.insert(id, Table::from(table_data));
 
     Ok(())
 }
@@ -225,6 +238,7 @@ fn main() -> Result<(), SetLoggerError> {
             get_random,
             get_random_set,
             save_table,
+            open_table,
         ])
         .setup(|app| {
             #[cfg(debug_assertions)] // only include this code on debug builds

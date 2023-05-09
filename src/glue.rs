@@ -121,9 +121,17 @@ pub fn get_random_set_with_callback(id: Uuid, count: usize, allow_duplicates: bo
 }
 
 #[derive(Debug, Clone, Serialize)]
-struct DialogFilter {
-    name: String,
-    extensions: Vec<String>,
+struct OpenTableArgs {
+    path: PathBuf
+}
+
+pub async fn open_table(path: PathBuf) -> Result<(), Error> {
+    let args = serde_wasm_bindgen::to_value(&OpenTableArgs { path }).map_err_and_log(Error::SerdeWasmBindgenError)?;
+    unit_from_result(invoke("open_table", args).await)
+}
+
+pub fn open_table_with_callback(path: PathBuf, callback: impl Into<Callback<()>>) {
+    wasm_bindgen_futures::spawn_local(emit_callback_if_ok(open_table(path), callback.into()));
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -142,11 +150,28 @@ pub fn save_table_with_callback(id: Uuid, path: PathBuf, callback: impl Into<Cal
 }
 
 #[derive(Debug, Clone, Serialize)]
+struct DialogFilter {
+    name: String,
+    extensions: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
 struct SaveDialogArgs {
     title: Option<String>,
     #[serde(rename = "defaultPath")]
     default_path: Option<String>,
     filters: Option<Vec<DialogFilter>>
+}
+
+#[derive(Debug, Clone, Serialize)]
+struct OpenDialogArgs {
+    title: Option<String>,
+    #[serde(rename = "defaultPath")]
+    default_path: Option<String>,
+    filters: Option<Vec<DialogFilter>>,
+    directory: bool,
+    multiple: bool,
+    recursive: bool,
 }
 
 pub async fn get_save_table_path() -> Result<Option<PathBuf>, Error> {
@@ -167,6 +192,29 @@ pub async fn get_save_table_path() -> Result<Option<PathBuf>, Error> {
 
 pub fn get_save_table_path_with_callback(callback: impl Into<Callback<Option<PathBuf>>>) {
     wasm_bindgen_futures::spawn_local(emit_callback_if_ok(get_save_table_path(), callback.into()));
+}
+
+pub async fn get_open_table_path() -> Result<Option<PathBuf>, Error> {
+    let args = OpenDialogArgs {
+        title: None,
+        default_path: None,
+        directory: false,
+        multiple: false,
+        recursive: false,
+        filters: Some(vec![
+            DialogFilter {
+                name: "Table".into(),
+                extensions: vec!["table".into()]
+            }
+        ])
+    };
+
+    let args = serde_wasm_bindgen::to_value(&args).map_err(Error::SerdeWasmBindgenError)?;
+    serde_wasm_bindgen::from_value(open(args).await).map_err(Error::SerdeWasmBindgenError)
+}
+
+pub fn get_open_table_path_with_callback(callback: impl Into<Callback<Option<PathBuf>>>) {
+    wasm_bindgen_futures::spawn_local(emit_callback_if_ok(get_open_table_path(), callback.into()));
 }
 
 fn unit_from_result(result: Result<JsValue, JsValue>) -> Result<(), Error> {
@@ -210,4 +258,7 @@ extern "C" {
 
     #[wasm_bindgen(js_namespace = ["window", "__TAURI__", "dialog"])]
     async fn save(args: JsValue) -> JsValue;
+
+    #[wasm_bindgen(js_namespace = ["window", "__TAURI__", "dialog"])]
+    async fn open(args: JsValue) -> JsValue;
 }
