@@ -1,7 +1,9 @@
+use std::path::PathBuf;
+
 use web_sys::HtmlInputElement;
 use yew::prelude::*;
 
-use crate::{components::{menu::Menu, table_tabs::TableTabs, modal::Modal}, hooks::prelude::*, glue::new_table_with_callback};
+use crate::{components::{menu::Menu, table_tabs::TableTabs, modal::Modal}, hooks::prelude::*, glue::{new_table_with_callback, get_save_table_path_with_callback, save_table_with_callback}};
 
 #[function_component(App)]
 pub fn app() -> Html {
@@ -18,6 +20,22 @@ pub fn app() -> Html {
         })
     };
 
+    let save_table = {
+        let tables = tables.clone();
+
+        Callback::from(move |_: MouseEvent| {
+            let tables = tables.clone();
+            
+            get_save_table_path_with_callback(move |value: Option<PathBuf>| {
+                if let (Some(table), Some(path)) = (tables.get_table_data(), value) {
+                    save_table_with_callback(table.id(), path.clone(), move |_| {
+                        log::info!("Saved table to {:?}", path);
+                    });
+                }
+            })
+        })
+    };
+
     html! {
         <>
             if *is_new_table_modal_open {
@@ -27,6 +45,7 @@ pub fn app() -> Html {
                 <Menu is_open={is_menu_open}>
                     <h2>{"Random table tool"}</h2>
                     <button onclick={open_new_table_modal}>{"New"}</button>
+                    <button onclick={save_table} disabled={tables.get_selected_index().is_none()}>{"Save"}</button>
                 </Menu>
                 <main class="flex-grow-1 stretch-height no-scroll">
                     <TableTabs tables={tables.clone()} />
