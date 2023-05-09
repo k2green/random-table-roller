@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use common_data::{IdNamePair, TableData};
 use yew::prelude::*;
 
@@ -8,7 +10,7 @@ pub struct UseTablesHandle {
     update_state: UseStateHandle<bool>,
     tables: UseStateHandle<Vec<IdNamePair>>,
     table_index: UseStateHandle<Option<usize>>,
-    table_data: UseStateHandle<Option<TableData>>
+    table_data: UseStateHandle<Option<Arc<TableData>>>
 }
 
 impl UseTablesHandle {
@@ -30,8 +32,8 @@ impl UseTablesHandle {
         *self.table_index
     }
 
-    pub fn get_table_data(&self) -> &Option<TableData> {
-        &*self.table_data
+    pub fn get_table_data(&self) -> Option<Arc<TableData>> {
+        (*self.table_data).clone()
     }
 }
 
@@ -52,9 +54,13 @@ pub fn use_tables() -> UseTablesHandle {
             get_tables_with_callback(move |updated: Vec<IdNamePair>| {
                 log::info!("Retrieved tables:\n{:#?}", &updated);
 
-                let new_index = match *table_index {
-                    Some(index) if index >= updated.len() => Some(updated.len() - 1),
-                    _ => *table_index
+                let new_index = if updated.len() == 0 {
+                    None
+                } else {
+                    match *table_index {
+                        Some(index) if index >= updated.len() => Some(updated.len() - 1),
+                        _ => *table_index
+                    }
                 };
 
                 tables.set(updated);
@@ -81,7 +87,7 @@ pub fn use_tables() -> UseTablesHandle {
 
                     get_table_with_callback(id, move |table| {
                         log::info!("Retrieved table:\n{:#?}", &table);
-                        table_data.set(Some(table));
+                        table_data.set(Some(Arc::new(table)));
                     });
                 }
             };

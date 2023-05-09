@@ -29,6 +29,46 @@ body {
   overflow: hidden;
 }
 
+button {
+  background-color: #CD6F07;
+  border: 2px solid #E68F03;
+  color: #f6f6f6;
+  box-shadow: none;
+  border-radius: 10px;
+}
+
+button:hover {
+  background-color: #D97F05;
+  border-color: #F29E02;
+}
+
+table {
+  border: 1px solid #0E002A;
+  background-color: #0E002A;
+  border-radius: 10px;
+  padding: 3px;
+}
+
+table tbody {
+  background-color: #1B004A;
+}
+
+table th {
+  text-align: left;
+}
+
+table th:first-of-type {
+  padding: 0px 10px;
+}
+
+table td:first-of-type {
+  text-align: center;
+}
+
+table td:last-of-type {
+  width: 99%;
+}
+
 button.blank {
   background-color: transparent;
   color: #f6f6f6;
@@ -143,4 +183,20 @@ svg.stroke-colour {
 .tab-bar {
   background-color: #070016;
   padding: 0px;
+}
+
+.tab-content {
+  padding: 10px 20px;
+}
+
+.button-row button:first-of-type:not(:last-of-type) {
+  margin-right: 2px;
+}
+
+.button-row button:last-of-type:not(:first-of-type) {
+  margin-left: 2px;
+}
+
+.button-row button:not(:first-of-type):not(:last-of-type) {
+  margin: 0px 2px;
 }

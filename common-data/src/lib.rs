@@ -1,4 +1,4 @@
-use std::sync::{Mutex, Arc, MutexGuard};
+use std::{sync::{Mutex, Arc, MutexGuard}, slice::Iter};
 
 use rand::{SeedableRng, rngs::StdRng, Rng};
 use serde::{Serialize, Deserialize};
@@ -112,6 +112,10 @@ impl TableData {
 
     pub fn len(&self) -> usize {
         self.entries.len()
+    }
+
+    pub fn iter(&self) -> Iter<String> {
+        self.entries.iter()
     }
 
     pub fn push(&mut self, item: impl Into<String>) {
