@@ -1,4 +1,4 @@
-use common_data::{IdNamePair, TableData};
+use common_data::{IdNamePair, TableData, RollResult};
 use serde::Serialize;
 use uuid::Uuid;
 use wasm_bindgen::prelude::*;
@@ -108,12 +108,12 @@ struct GetRandomSetArgs {
     allow_duplicates: bool
 }
 
-pub async fn get_random_set(id: Uuid, count: usize, allow_duplicates: bool) -> Result<String, Error> {
+pub async fn get_random_set(id: Uuid, count: usize, allow_duplicates: bool) -> Result<Vec<RollResult>, Error> {
     let args = serde_wasm_bindgen::to_value(&GetRandomSetArgs { id, count, allow_duplicates }).map_err_and_log(Error::SerdeWasmBindgenError)?;
     from_result(invoke("get_random_set", args).await)
 }
 
-pub fn get_random_set_with_callback(id: Uuid, count: usize, allow_duplicates: bool, callback: impl Into<Callback<String>>) {
+pub fn get_random_set_with_callback(id: Uuid, count: usize, allow_duplicates: bool, callback: impl Into<Callback<Vec<RollResult>>>) {
     wasm_bindgen_futures::spawn_local(emit_callback_if_ok(get_random_set(id, count, allow_duplicates), callback.into()));
 }
 

@@ -1,4 +1,4 @@
-use std::{sync::{Mutex, Arc, MutexGuard}, slice::Iter};
+use std::{sync::{Mutex, Arc, MutexGuard}, slice::Iter, collections::HashMap};
 
 use rand::{SeedableRng, rngs::StdRng, Rng};
 use serde::{Serialize, Deserialize};
@@ -75,6 +75,22 @@ impl Table {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RollResult {
+    count: usize,
+    entry: String
+}
+
+impl RollResult {
+    pub fn count(&self) -> usize {
+        self.count
+    }
+
+    pub fn entry(&self) -> &str {
+        &self.entry
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TableData {
     id: Uuid,
     name: String,
@@ -143,23 +159,35 @@ impl TableData {
         Ok(&self.entries[rng.gen_range(0..self.len())])
     }
 
-    pub fn get_random_set(&self, count: usize, allow_duplicates: bool) -> Result<Vec<&str>, getrandom::Error> {
+    pub fn get_random_set(&self, count: usize, allow_duplicates: bool) -> Result<Vec<RollResult>, getrandom::Error> {
         let mut rng = create_rng()?;
-        let mut indices = Vec::new();
+        let mut rolls: HashMap<usize, usize> = HashMap::new();
 
         for _ in 0..count {
-            let mut random = rng.gen_range(0..self.len());
+            let mut roll = rng.gen_range(0..self.len());
 
             if !allow_duplicates {
-                while indices.contains(&random) {
-                    random = rng.gen_range(0..self.len());
+                while rolls.contains_key(&roll) {
+                    roll = rng.gen_range(0..self.len());
                 }
             }
 
-            indices.push(random);
+            match rolls.get_mut(&roll) {
+                Some(rolls) => *rolls += 1,
+                None => { rolls.insert(roll, 1); }
+            };
         }
 
-        Ok(indices.into_iter().map(|idx| self.entries[idx].as_str()).collect())
+        let mut output = rolls.into_iter()
+            .map(|(roll, count)| RollResult {
+                count,
+                entry: self.entries[roll].clone()
+            })
+            .collect::<Vec<_>>();
+
+        output.sort_by(|a, b| a.entry().to_lowercase().cmp(&b.entry().to_lowercase()));
+
+        Ok(output)
     }
 }
 

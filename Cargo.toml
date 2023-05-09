@@ -19,6 +19,7 @@ wasm-logger = "0.2.0"
 yew_icons = { version = "0.7.2", features = [
     "LucideMenu"
 ]}
+regex = "1.8.1"
 
 [workspace]
 members = [
