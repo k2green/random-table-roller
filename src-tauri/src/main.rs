@@ -5,7 +5,7 @@ pub mod logging;
 
 use std::{collections::HashMap, sync::{Mutex, MutexGuard}};
 
-use common_data::{BackendError, Table, IdNamePair, TableData};
+use common_data::{BackendError, Table, IdNamePair, TableData, RollResult};
 use log::SetLoggerError;
 use logging::{setup_logging, cleanup_logs};
 use tauri::{State, Manager};
@@ -125,7 +125,7 @@ fn get_random(state: State<AppState>, id: Uuid) -> Result<String, BackendError> 
 }
 
 #[tauri::command]
-fn get_random_set(state: State<AppState>, id: Uuid, count: usize, allow_duplicates: bool) -> Result<Vec<String>, BackendError> {
+fn get_random_set(state: State<AppState>, id: Uuid, count: usize, allow_duplicates: bool) -> Result<Vec<RollResult>, BackendError> {
     log::info!("Getting {} random entries from table with id '{}'...", count, id);
     let tables = log_result(state.lock_tables())?;
     let table = log_result(tables.get(&id)
@@ -134,7 +134,9 @@ fn get_random_set(state: State<AppState>, id: Uuid, count: usize, allow_duplicat
     let data = table.get_data()?;
     let entry = log_result(data.get_random_set(count, allow_duplicates).map_err(|e| BackendError::from(e)))?;
 
-    Ok(entry.into_iter().map(|e| e.to_string()).collect())
+    log::info!("Random rolls: {:?}", &entry);
+
+    Ok(entry)
 }
 
 fn get_test_state() -> AppState {

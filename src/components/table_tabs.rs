@@ -1,11 +1,12 @@
 use std::sync::Arc;
 
-use common_data::TableData;
+use common_data::{TableData, RollResult};
+use regex::Regex;
 use uuid::Uuid;
-use web_sys::HtmlTextAreaElement;
+use web_sys::{HtmlTextAreaElement, HtmlInputElement};
 use yew::prelude::*;
 
-use crate::{hooks::prelude::UseTablesHandle, glue::{remove_table_with_callback, add_entries_with_callback}, components::modal::Modal};
+use crate::{hooks::prelude::UseTablesHandle, glue::{remove_table_with_callback, add_entries_with_callback, get_random_set_with_callback}, components::modal::Modal};
 
 #[derive(Debug, Clone, PartialEq, Properties)]
 pub struct TableTabsProps {
@@ -92,11 +93,21 @@ struct TabContentProps {
 fn tab_content(props: &TabContentProps) -> Html {
     let TabContentProps { tables, table } = props.clone();
     let is_add_entry_modal_open = use_state_eq(|| false);
+    let is_roll_modal_open = use_state_eq(|| false);
+    let is_roll_result_modal_open = use_state_eq(|| false);
+    let roll_results = use_state_eq(|| Vec::<RollResult>::new());
 
     let open_entries_modal = {
         let is_add_entry_modal_open = is_add_entry_modal_open.clone();
         Callback::from(move |_: MouseEvent| {
             is_add_entry_modal_open.set(true);
+        })
+    };
+
+    let open_roll_modal = {
+        let is_roll_modal_open = is_roll_modal_open.clone();
+        Callback::from(move |_: MouseEvent| {
+            is_roll_modal_open.set(true);
         })
     };
 
@@ -115,7 +126,13 @@ fn tab_content(props: &TabContentProps) -> Html {
     html! {
         <>
             if *is_add_entry_modal_open {
-                <AddEntryModal tables={tables} is_open={is_add_entry_modal_open} id={table.id()} />
+                <AddEntryModal tables={tables.clone()} is_open={is_add_entry_modal_open} id={table.id()} />
+            }
+            if *is_roll_modal_open {
+                <RandomRollModal is_open={is_roll_modal_open} is_results_open={is_roll_result_modal_open.clone()} results={roll_results.clone()} table={table.clone()} id={table.id()} />
+            }
+            if *is_roll_result_modal_open {
+                <RollResults is_open={is_roll_result_modal_open} results={roll_results} />
             }
             <div class="flex-column flex-grow-1">
                 <h1>{table.name()}</h1>
@@ -133,9 +150,159 @@ fn tab_content(props: &TabContentProps) -> Html {
             </div>
             <div class="flex-row button-row">
                 <button class="flex-grow-1" onclick={open_entries_modal}>{"Add entries"}</button>
-                <button class="flex-grow-1">{"Roll"}</button>
+                <button class="flex-grow-1" onclick={open_roll_modal}>{"Roll"}</button>
             </div>
         </>
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Properties)]
+struct RollResultsProps {
+    is_open: UseStateHandle<bool>,
+    results: UseStateHandle<Vec<RollResult>>,
+}
+
+#[function_component(RollResults)]
+fn roll_results_modal(props: &RollResultsProps) -> Html {
+    let RollResultsProps { is_open, results } = props.clone();
+
+    let close = {
+        let is_open = is_open.clone();
+        Callback::from(move |_: MouseEvent| {
+            is_open.set(false);
+        })
+    };
+
+    let entries = results.iter()
+        .map(|res| html! {
+            <tr>
+                <td class="align-right"><p>{format!("{}x", res.count())}</p></td>
+                <td><p>{res.entry()}</p></td>
+            </tr>
+        })
+        .collect::<Html>();
+
+    html! {
+        <Modal>
+            <h3>{"Results"}</h3>
+            <div class="scroll flex-grow-1">
+                <table class="stretch-width blank">
+                    {entries}
+                </table>
+            </div>
+            <div class="flex-row button-row">
+                <button class="flex-grow-1" onclick={close}>{"Ok"}</button>
+            </div>
+        </Modal>
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Properties)]
+struct RandomRollModalProps {
+    is_open: UseStateHandle<bool>,
+    is_results_open: UseStateHandle<bool>,
+    results: UseStateHandle<Vec<RollResult>>,
+    table: Arc<TableData>,
+    id: Uuid
+}
+
+#[function_component(RandomRollModal)]
+fn random_roll_modal(props: &RandomRollModalProps) -> Html {
+    let RandomRollModalProps {
+        is_open,
+        is_results_open,
+        results,
+        table,
+        id
+    } = props.clone();
+
+    let allow_duplicates = use_state_eq(|| true);
+    let random_roll_count = use_state_eq(|| 1_usize);
+
+    let make_rolls = {
+        let is_open = is_open.clone();
+        let is_results_open = is_results_open.clone();
+        let results = results.clone();
+        let random_roll_count = random_roll_count.clone();
+        let allow_duplicates = allow_duplicates.clone();
+        
+        Callback::from(move |_: MouseEvent| {
+            let is_open = is_open.clone();
+            let is_results_open = is_results_open.clone();
+            let results = results.clone();
+            get_random_set_with_callback(id, *random_roll_count, *allow_duplicates, move |res| {
+                is_open.set(false);
+                is_results_open.set(true);
+                results.set(res);
+            });
+        })
+    };
+
+    let update_allow_duplicates = {
+        let random_roll_count = random_roll_count.clone();
+        let allow_duplicates = allow_duplicates.clone();
+        let table = table.clone();
+
+        Callback::from(move |e: Event| {
+            let target: HtmlInputElement = e.target_unchecked_into();
+            allow_duplicates.set(target.checked());
+
+            if !target.checked() {
+                random_roll_count.set((*random_roll_count).min(table.len()));
+            }
+        })
+    };
+
+    let update_count = {
+        let random_roll_count = random_roll_count.clone();
+        let allow_duplicates = allow_duplicates.clone();
+        let table = table.clone();
+
+        Callback::from(move |e: Event| {
+            let target: HtmlInputElement = e.target_unchecked_into();
+            if let Ok(pattern) = Regex::new(r"^[ \n\r\t]*(\d+)[ \n\r\t]*$") {
+                if let Some(captures) = pattern.captures(&target.value()) {
+                    if let Some(capture) = captures.get(1) {
+                        if let Ok(parsed) = usize::from_str_radix(capture.as_str(), 10) {
+                            let mut new_value = parsed.max(1);
+
+                            if !*allow_duplicates {
+                                new_value = new_value.min(table.len());
+                            }
+
+                            random_roll_count.set(new_value);
+                        }
+                    }
+                }
+            }
+        })
+    };
+
+    let cancel = {
+        let is_open = is_open.clone();
+        Callback::from(move |_: MouseEvent| {
+            is_open.set(false);
+        })
+    };
+
+    html! {
+        <Modal>
+            <h3>{"Add entries"}</h3>
+            <table class="stretch-width blank">
+                <tr>
+                    <td><p>{"Number of rolls:"}</p></td>
+                    <td><input class="align-right" value={random_roll_count.to_string()} onchange={update_count} /></td>
+                </tr>
+                <tr>
+                    <td><p>{"Allow duplicates:"}</p></td>
+                    <td><input type="checkbox" checked={*allow_duplicates} onchange={update_allow_duplicates} /></td>
+                </tr>
+            </table>
+            <div class="flex-row button-row">
+                <button class="flex-grow-1" onclick={make_rolls}>{"Roll"}</button>
+                <button class="flex-grow-1" onclick={cancel}>{"Cancel"}</button>
+            </div>
+        </Modal>
     }
 }
 
@@ -184,7 +351,7 @@ fn add_entry_modal(props: &AddEntryModalProps) -> Html {
     html! {
         <Modal>
             <h3>{"Add entries"}</h3>
-            <p>{"This is where you add new entries to your table. Multiple entries can be added by separating them onto new lines and empty lines will be ignored."}</p>
+            <p class="restrict-width">{"This is where you add new entries to your table. Multiple entries can be added by separating them onto new lines and empty lines will be ignored."}</p>
             <textarea onchange={update_text}>{&*text}</textarea>
             <div class="flex-row button-row">
                 <button class="flex-grow-1" onclick={add_entries}>{"Add Entries"}</button>

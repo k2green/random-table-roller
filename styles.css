@@ -29,11 +29,34 @@ body {
   overflow: hidden;
 }
 
+h1 {
+  margin: 0.7rem 0px;
+}
+
+h2 {
+  margin: 0.7rem 0px;
+}
+
+h3 {
+  margin: 0.7rem 0px;
+}
+
 textarea {
   resize: none;
   width: var(--modal-width);
   height: 350px;
   background-color: #09001D;
+  border: 1px solid black;
+  border-radius: 10px;
+  color: #f6f6f6;
+  font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
+}
+
+input {
+  resize: none;
+  background-color: #09001D;
+  border: 1px solid black;
+  border-radius: 5px;
   color: #f6f6f6;
   font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
 }
@@ -56,6 +79,11 @@ table {
   background-color: #0E002A;
   border-radius: 10px;
   padding: 3px;
+}
+
+.align-right {
+  text-align: right;
+  padding-right: 10px;
 }
 
 table tbody {
@@ -83,6 +111,28 @@ button.blank {
   color: #f6f6f6;
   border: none;
   box-shadow: none;
+}
+
+table.blank {
+  border: none;
+  background-color: transparent;
+  border-radius: 0px;
+  padding: 0px;
+  margin-bottom: 15px;
+}
+
+table.blank tr {
+  margin: 3px 0px;
+}
+
+table.blank tr > td:first-of-type {
+  white-space: nowrap;
+  text-align: left;
+}
+
+table.blank tr > td:last-of-type {
+  text-align: right;
+  align-items: end;
 }
 
 .tab-button {
@@ -187,6 +237,10 @@ svg.stroke-colour {
   flex: 1;
 }
 
+.flex-shrink-1 {
+  flex-shrink: 1;
+}
+
 .menu-bar {
   background-color: #070016;
   padding: 3px 0px;
@@ -220,13 +274,20 @@ svg.stroke-colour {
 
 .modal {
   --modal-width: 310px;
-  width: min-content;
-  height: min-content;
+  width: fit-content;
+  min-height: fit-content;
+  max-height: 100vh;
+  max-height: 100dvh;
   background-color: #28006A;
   border-radius: 20px;
   padding: 10px;
+  overflow: none;
+}
+
+.modal p.restrict-width {
+  width: var(--modal-width);
 }
 
 .modal p {
-  width: var(--modal-width);
+  margin: 0px;
 }
