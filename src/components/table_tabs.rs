@@ -6,7 +6,7 @@ use uuid::Uuid;
 use web_sys::{HtmlTextAreaElement, HtmlInputElement};
 use yew::prelude::*;
 
-use crate::{hooks::prelude::UseTablesHandle, glue::{remove_table_with_callback, add_entries_with_callback, get_random_set_with_callback}, components::modal::Modal};
+use crate::{hooks::prelude::UseTablesHandle, glue::{remove_table_with_callback, add_entries_with_callback, get_random_set_with_callback, remove_entry_with_callback}, components::modal::Modal};
 
 #[derive(Debug, Clone, PartialEq, Properties)]
 pub struct TableTabsProps {
@@ -96,6 +96,7 @@ fn tab_content(props: &TabContentProps) -> Html {
     let is_roll_modal_open = use_state_eq(|| false);
     let is_roll_result_modal_open = use_state_eq(|| false);
     let roll_results = use_state_eq(|| Vec::<RollResult>::new());
+    let id = table.id();
 
     let open_entries_modal = {
         let is_add_entry_modal_open = is_add_entry_modal_open.clone();
@@ -113,11 +114,26 @@ fn tab_content(props: &TabContentProps) -> Html {
 
     let entries = table.iter()
         .enumerate()
-        .map(|(idx, entry)| {
+        .map(|(index, entry)| {
+            let remove_entry = {
+                let tables = tables.clone();
+                Callback::from(move |_: MouseEvent| {
+                    let tables = tables.clone();
+                    remove_entry_with_callback(id, index, move |_| {
+                        tables.update_data();
+                    });
+                })
+            };
+
             html! {
-                <tr>
-                    <td>{idx + 1}</td>
-                    <td>{entry}</td>
+                <tr class="min-height">
+                    <td>{index + 1}</td>
+                    <td>
+                        <div class="flex-row min-height">
+                            <p class="flex-grow-1">{entry}</p>
+                            <button class="table-button" onclick={remove_entry}>{"X"}</button>
+                        </div>
+                    </td>
                 </tr>
             }
         })

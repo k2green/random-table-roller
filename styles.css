@@ -88,13 +88,12 @@ table {
   padding: 3px;
 }
 
-.align-right {
-  text-align: right;
-  padding-right: 10px;
-}
-
 table tbody {
   background-color: #1B004A;
+}
+
+table tbody p {
+  margin: 3px 0px;
 }
 
 table th {
@@ -111,9 +110,17 @@ table td:first-of-type {
 
 table td:last-of-type {
   width: 99%;
+  padding-left: 10px;
 }
 
 button.blank {
+  background-color: transparent;
+  color: #f6f6f6;
+  border: none;
+  box-shadow: none;
+}
+
+button.table-button {
   background-color: transparent;
   color: #f6f6f6;
   border: none;
@@ -140,6 +147,11 @@ table.blank tr > td:first-of-type {
 table.blank tr > td:last-of-type {
   text-align: right;
   align-items: end;
+}
+
+.align-right {
+  text-align: right;
+  padding-right: 10px;
 }
 
 .tab-button {
