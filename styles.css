@@ -53,6 +53,10 @@ textarea {
   margin-top: 5px;
 }
 
+textarea.small {
+  height: 280px;
+}
+
 input {
   resize: none;
   background-color: #09001D;
@@ -270,6 +274,26 @@ svg.stroke-colour {
   padding: 0px 15px;
 }
 
+.menu-content button {
+  border: none;
+  border-radius: 0px;
+  background-color: transparent;
+  color: #f6f6f6;
+  text-align: left;
+  width: 100%;
+  margin: 3px 0px;
+  padding: 4px 5px;
+}
+
+.menu-content button:hover {
+  background-color: #16003D;
+}
+
+.menu-content button:disabled {
+  background-color: transparent;
+  color: #858585;
+}
+
 .tab-bar {
   background-color: #070016;
   padding: 0px;
@@ -327,4 +351,9 @@ input.table-name {
 
 .pointer {
   cursor: pointer;
+}
+
+.vert-margin {
+  margin: 10px 0px;
+  padding: 10px 0px;
 }

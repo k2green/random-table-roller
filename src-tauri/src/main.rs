@@ -3,7 +3,7 @@
 
 pub mod logging;
 
-use std::{collections::HashMap, sync::{Mutex, MutexGuard}, cmp::Ordering, path::PathBuf, fs::{OpenOptions, self, File}};
+use std::{collections::HashMap, sync::{Mutex, MutexGuard}, cmp::Ordering, path::PathBuf, fs::{self, File}};
 
 use common_data::{BackendError, Table, IdNamePair, TableData, RollResult};
 use log::SetLoggerError;
@@ -211,23 +211,6 @@ fn open_table(state: State<AppState>, path: PathBuf) -> Result<(), BackendError>
     tables.insert(id, Table::from(table_data));
 
     Ok(())
-}
-
-fn get_test_state() -> AppState {
-    let mut tables = HashMap::new();
-
-    for i in 0..5 {
-        let mut table = TableData::new(format!("Test table {}", i), tables.len());
-        let id = table.id();
-
-        for j in 0..10 {
-            table.push(format!("Table {} entry {}", i, j));
-        }
-
-        tables.insert(id, Table::from(table));
-    }
-
-    AppState { tables: Mutex::new(tables) }
 }
 
 fn main() -> Result<(), SetLoggerError> {
