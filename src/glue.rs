@@ -60,6 +60,21 @@ pub fn remove_table_with_callback(id: Uuid, callback: impl Into<Callback<TableDa
 }
 
 #[derive(Debug, Clone, Serialize)]
+struct ChangeTableNameArgs {
+    id: Uuid,
+    name: String
+}
+
+pub async fn change_table_name(id: Uuid, name: impl Into<String>) -> Result<(), Error> {
+    let args = serde_wasm_bindgen::to_value(&ChangeTableNameArgs { id, name: name.into() }).map_err_and_log(Error::SerdeWasmBindgenError)?;
+    unit_from_result(invoke("change_table_name", args).await)
+}
+
+pub fn change_table_name_with_callback(id: Uuid, name: impl Into<String>, callback: impl Into<Callback<()>>) {
+    wasm_bindgen_futures::spawn_local(emit_callback_if_ok(change_table_name(id, name.into()), callback.into()));
+}
+
+#[derive(Debug, Clone, Serialize)]
 struct AddEntriesArgs {
     id: Uuid,
     entries: String

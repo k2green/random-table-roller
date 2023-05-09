@@ -109,6 +109,18 @@ fn remove_table(state: State<AppState>, id: Uuid) -> Result<Table, BackendError>
 }
 
 #[tauri::command]
+fn change_table_name(state: State<AppState>, id: Uuid, name: String) -> Result<(), BackendError> {
+    let mut tables = log_result(state.lock_tables())?;
+    let table = log_result(tables.get_mut(&id)
+        .ok_or(BackendError::argument_error("id", format!("Could not find table with id '{}'", id))))?;
+
+    let mut data = log_result(table.get_data().map_err(BackendError::from))?;
+    data.set_name(name);
+
+    Ok(())
+}
+
+#[tauri::command]
 fn add_entries(state: State<AppState>, id: Uuid, entries: String) -> Result<(), BackendError> {
     log::info!("Adding '{:?}' to table with id '{}'...", &entries, id);
     let mut tables = log_result(state.lock_tables())?;
@@ -233,6 +245,7 @@ fn main() -> Result<(), SetLoggerError> {
             get_table,
             new_table,
             remove_table,
+            change_table_name,
             add_entries,
             remove_entry,
             get_random,

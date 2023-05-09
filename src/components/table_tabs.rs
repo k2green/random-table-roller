@@ -6,7 +6,7 @@ use uuid::Uuid;
 use web_sys::{HtmlTextAreaElement, HtmlInputElement};
 use yew::prelude::*;
 
-use crate::{hooks::prelude::UseTablesHandle, glue::{remove_table_with_callback, add_entries_with_callback, get_random_set_with_callback, remove_entry_with_callback}, components::modal::Modal};
+use crate::{hooks::prelude::UseTablesHandle, glue::{remove_table_with_callback, add_entries_with_callback, get_random_set_with_callback, remove_entry_with_callback, change_table_name_with_callback}, components::{modal::Modal, editable_header::EditableHeader}};
 
 #[derive(Debug, Clone, PartialEq, Properties)]
 pub struct TableTabsProps {
@@ -112,6 +112,18 @@ fn tab_content(props: &TabContentProps) -> Html {
         })
     };
 
+    let set_name = {
+        let tables = tables.clone();
+
+        Callback::from(move |name: String| {
+            let tables = tables.clone();
+            change_table_name_with_callback(id, name, move |_| {
+                tables.update();
+                tables.update_data();
+            })
+        })
+    };
+
     let entries = table.iter()
         .enumerate()
         .map(|(index, entry)| {
@@ -126,7 +138,7 @@ fn tab_content(props: &TabContentProps) -> Html {
             };
 
             html! {
-                <tr class="min-height">
+                <tr>
                     <td>{index + 1}</td>
                     <td>
                         <div class="flex-row min-height">
@@ -151,7 +163,7 @@ fn tab_content(props: &TabContentProps) -> Html {
                 <RollResults is_open={is_roll_result_modal_open} results={roll_results} />
             }
             <div class="flex-column flex-grow-1">
-                <h1>{table.name()}</h1>
+                <EditableHeader text={table.name().to_string()} callback={set_name} />
                 <table>
                     <thead>
                         <tr>

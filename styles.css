@@ -314,3 +314,17 @@ svg.stroke-colour {
 .heading {
   text-align: center;
 }
+
+.table-name {
+  margin: 10px 0px;
+  padding: 0px;
+  font-size: 20px;
+}
+
+input.table-name {
+  padding: 3px 10px;
+}
+
+.pointer {
+  cursor: pointer;
+}
