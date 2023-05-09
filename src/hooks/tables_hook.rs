@@ -21,6 +21,10 @@ impl UseTablesHandle {
         }
     }
 
+    pub fn len(&self) -> usize {
+        self.tables.len()
+    }
+
     pub fn update(&self) {
         self.update_state.set(!*self.update_state);
     }

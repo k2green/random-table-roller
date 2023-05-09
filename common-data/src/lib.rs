@@ -55,15 +55,15 @@ impl<'de> Deserialize<'de> for Table {
 }
 
 impl Table {
-    pub fn new(name: impl Into<String>) -> (Uuid, Self) {
-        let table = TableData::new(name);
+    pub fn new(name: impl Into<String>, order: usize) -> (Uuid, Self) {
+        let table = TableData::new(name, order);
         let id = table.id();
 
         (id, Self { data: Arc::new(Mutex::new(table)) })
     }
 
-    pub fn with_capacity(name: impl Into<String>, capacity: usize) -> (Uuid, Self) {
-        let table = TableData::with_capacity(name, capacity);
+    pub fn with_capacity(name: impl Into<String>, capacity: usize, order: usize) -> (Uuid, Self) {
+        let table = TableData::with_capacity(name, capacity, order);
         let id = table.id();
 
         (id, Self { data: Arc::new(Mutex::new(table)) })
@@ -93,25 +93,32 @@ impl RollResult {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TableData {
     id: Uuid,
+    order: usize,
     name: String,
     entries: Vec<String>
 }
 
 impl TableData {
-    pub fn new(name: impl Into<String>) -> TableData {
+    pub fn new(name: impl Into<String>, order: usize) -> TableData {
         Self {
+            order,
             id: Uuid::new_v4(),
             name: name.into(),
             entries: Vec::new(),
         }
     }
 
-    pub fn with_capacity(name: impl Into<String>, capacity: usize) -> TableData {
+    pub fn with_capacity(name: impl Into<String>, capacity: usize, order: usize) -> TableData {
         Self {
+            order,
             id: Uuid::new_v4(),
             name: name.into(),
             entries: Vec::with_capacity(capacity),
         }
+    }
+
+    pub fn sort(&mut self) {
+        self.entries.sort_by(|a, b| a.to_lowercase().cmp(&b.to_lowercase()));
     }
 
     pub fn id(&self) -> Uuid {
@@ -120,6 +127,10 @@ impl TableData {
 
     pub fn name(&self) -> &str {
         &self.name
+    }
+
+    pub fn order(&self) -> usize {
+        self.order
     }
 
     pub fn set_name(&mut self, name: impl Into<String>) {
@@ -229,23 +240,5 @@ impl BackendError {
             arg_name: arg_name.into(),
             message: message.into()
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_serialization() {
-        let (_, data) = Table::new("Test table");
-        {
-            let mut lock = data.get_data().unwrap();
-            for i in 0..5 {
-                lock.push(i.to_string());
-            }
-        }
-
-        println!("{}", serde_json::to_string_pretty(&data).unwrap());
     }
 }
