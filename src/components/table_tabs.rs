@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use common_data::TableData;
 use yew::prelude::*;
 
@@ -54,24 +56,71 @@ pub fn table_tabs(props: &TableTabsProps) -> Html {
             <div class="flex-row scroll-x tab-bar">
                 {items}
             </div>
-            <div class="flex-grow-1 scroll">
+            <div class="flex-grow-1 flex-column scroll tab-content">
                 {get_table_content(tables.get_table_data())}
             </div>
         </div>
     }
 }
 
-fn get_table_content(table: &Option<TableData>) -> Html {
+fn get_table_content(table: Option<Arc<TableData>>) -> Html {
     match table {
         None => render_welcome_content(),
-        Some(_) => html! {
-            
+        Some(table) => html! {
+            <TabContent table={table.clone()} />
         }
     }
 }
 
 fn render_welcome_content() -> Html {
     html! {
-        <h1>{"Welcome!"}</h1>
+        <div class="flex-column flex-grow-1">
+            <h1>{"Welcome!"}</h1>
+        </div>
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Properties)]
+struct TabContentProps {
+    table: Arc<TableData>,
+}
+
+#[function_component(TabContent)]
+fn tab_content(props: &TabContentProps) -> Html {
+    let TabContentProps { table } = props.clone();
+
+    let entries = table.iter()
+        .enumerate()
+        .map(|(idx, entry)| {
+            html! {
+                <tr>
+                    <td>{idx}</td>
+                    <td>{entry}</td>
+                </tr>
+            }
+        })
+        .collect::<Html>();
+
+    html! {
+        <>
+            <div class="flex-column flex-grow-1">
+                <h1>{table.name()}</h1>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>{"Roll"}</th>
+                            <th>{"Entry"}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {entries}
+                    </tbody>
+                </table>
+            </div>
+            <div class="flex-row button-row">
+                <button class="flex-grow-1">{"Add entries"}</button>
+                <button class="flex-grow-1">{"Roll"}</button>
+            </div>
+        </>
     }
 }
