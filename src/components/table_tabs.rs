@@ -1,9 +1,11 @@
 use std::sync::Arc;
 
 use common_data::TableData;
+use uuid::Uuid;
+use web_sys::HtmlTextAreaElement;
 use yew::prelude::*;
 
-use crate::{hooks::prelude::UseTablesHandle, glue::remove_table_with_callback};
+use crate::{hooks::prelude::UseTablesHandle, glue::{remove_table_with_callback, add_entries_with_callback}, components::modal::Modal};
 
 #[derive(Debug, Clone, PartialEq, Properties)]
 pub struct TableTabsProps {
@@ -57,17 +59,17 @@ pub fn table_tabs(props: &TableTabsProps) -> Html {
                 {items}
             </div>
             <div class="flex-grow-1 flex-column scroll tab-content">
-                {get_table_content(tables.get_table_data())}
+                {get_table_content(tables)}
             </div>
         </div>
     }
 }
 
-fn get_table_content(table: Option<Arc<TableData>>) -> Html {
-    match table {
+fn get_table_content(tables: UseTablesHandle) -> Html {
+    match tables.get_table_data() {
         None => render_welcome_content(),
         Some(table) => html! {
-            <TabContent table={table.clone()} />
+            <TabContent tables={tables} table={table} />
         }
     }
 }
@@ -82,19 +84,28 @@ fn render_welcome_content() -> Html {
 
 #[derive(Debug, Clone, PartialEq, Properties)]
 struct TabContentProps {
+    tables: UseTablesHandle,
     table: Arc<TableData>,
 }
 
 #[function_component(TabContent)]
 fn tab_content(props: &TabContentProps) -> Html {
-    let TabContentProps { table } = props.clone();
+    let TabContentProps { tables, table } = props.clone();
+    let is_add_entry_modal_open = use_state_eq(|| false);
+
+    let open_entries_modal = {
+        let is_add_entry_modal_open = is_add_entry_modal_open.clone();
+        Callback::from(move |_: MouseEvent| {
+            is_add_entry_modal_open.set(true);
+        })
+    };
 
     let entries = table.iter()
         .enumerate()
         .map(|(idx, entry)| {
             html! {
                 <tr>
-                    <td>{idx}</td>
+                    <td>{idx + 1}</td>
                     <td>{entry}</td>
                 </tr>
             }
@@ -103,6 +114,9 @@ fn tab_content(props: &TabContentProps) -> Html {
 
     html! {
         <>
+            if *is_add_entry_modal_open {
+                <AddEntryModal tables={tables} is_open={is_add_entry_modal_open} id={table.id()} />
+            }
             <div class="flex-column flex-grow-1">
                 <h1>{table.name()}</h1>
                 <table>
@@ -118,9 +132,64 @@ fn tab_content(props: &TabContentProps) -> Html {
                 </table>
             </div>
             <div class="flex-row button-row">
-                <button class="flex-grow-1">{"Add entries"}</button>
+                <button class="flex-grow-1" onclick={open_entries_modal}>{"Add entries"}</button>
                 <button class="flex-grow-1">{"Roll"}</button>
             </div>
         </>
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Properties)]
+struct AddEntryModalProps {
+    is_open: UseStateHandle<bool>,
+    tables: UseTablesHandle,
+    id: Uuid
+}
+
+#[function_component(AddEntryModal)]
+fn add_entry_modal(props: &AddEntryModalProps) -> Html {
+    let AddEntryModalProps { is_open, tables, id } = props.clone();
+    let text = use_state_eq(|| String::new());
+
+    let update_text = {
+        let text = text.clone();
+        Callback::from(move |e: Event| {
+            let target: HtmlTextAreaElement = e.target_unchecked_into();
+            text.set(target.value());
+        })
+    };
+
+    let add_entries = {
+        let is_open = is_open.clone();
+        let text = text.clone();
+        let tables = tables.clone();
+
+        Callback::from(move |_: MouseEvent| {
+            let is_open = is_open.clone();
+            let tables = tables.clone();
+            add_entries_with_callback(id, &*text, move |_| {
+                tables.update_data();
+                is_open.set(false);
+            })
+        })
+    };
+
+    let cancel = {
+        let is_open = is_open.clone();
+        Callback::from(move |_: MouseEvent| {
+            is_open.set(false);
+        })
+    };
+
+    html! {
+        <Modal>
+            <h3>{"Add entries"}</h3>
+            <p>{"This is where you add new entries to your table. Multiple entries can be added by separating them onto new lines and empty lines will be ignored."}</p>
+            <textarea onchange={update_text}>{&*text}</textarea>
+            <div class="flex-row button-row">
+                <button class="flex-grow-1" onclick={add_entries}>{"Add Entries"}</button>
+                <button class="flex-grow-1" onclick={cancel}>{"Cancel"}</button>
+            </div>
+        </Modal>
     }
 }

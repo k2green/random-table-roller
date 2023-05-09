@@ -57,18 +57,18 @@ pub fn remove_table_with_callback(id: Uuid, callback: impl Into<Callback<TableDa
 }
 
 #[derive(Debug, Clone, Serialize)]
-struct InsertEntryArgs {
+struct AddEntriesArgs {
     id: Uuid,
-    entry: String
+    entries: String
 }
 
-pub async fn insert_entry(id: Uuid, entry: impl Into<String>) -> Result<(), Error> {
-    let args = serde_wasm_bindgen::to_value(&InsertEntryArgs { id, entry: entry.into() }).map_err_and_log(Error::SerdeWasmBindgenError)?;
-    unit_from_result(invoke("insert_entry", args).await)
+pub async fn add_entries(id: Uuid, entries: impl Into<String>) -> Result<(), Error> {
+    let args = serde_wasm_bindgen::to_value(&AddEntriesArgs { id, entries: entries.into() }).map_err_and_log(Error::SerdeWasmBindgenError)?;
+    unit_from_result(invoke("add_entries", args).await)
 }
 
-pub fn insert_entry_with_callback(id: Uuid, entry: impl Into<String>, callback: impl Into<Callback<()>>) {
-    wasm_bindgen_futures::spawn_local(emit_callback_if_ok(insert_entry(id, entry.into()), callback.into()));
+pub fn add_entries_with_callback(id: Uuid, entry: impl Into<String>, callback: impl Into<Callback<()>>) {
+    wasm_bindgen_futures::spawn_local(emit_callback_if_ok(add_entries(id, entry.into()), callback.into()));
 }
 
 #[derive(Debug, Clone, Serialize)]

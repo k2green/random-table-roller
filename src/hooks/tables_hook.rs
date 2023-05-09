@@ -8,6 +8,7 @@ use crate::glue::{get_tables_with_callback, get_table_with_callback};
 #[derive(Debug, Clone, PartialEq)]
 pub struct UseTablesHandle {
     update_state: UseStateHandle<bool>,
+    update_table_state: UseStateHandle<bool>,
     tables: UseStateHandle<Vec<IdNamePair>>,
     table_index: UseStateHandle<Option<usize>>,
     table_data: UseStateHandle<Option<Arc<TableData>>>
@@ -22,6 +23,10 @@ impl UseTablesHandle {
 
     pub fn update(&self) {
         self.update_state.set(!*self.update_state);
+    }
+
+    pub fn update_data(&self) {
+        self.update_table_state.set(!*self.update_table_state);
     }
 
     pub fn tables(&self) -> &[IdNamePair] {
@@ -40,6 +45,7 @@ impl UseTablesHandle {
 #[hook]
 pub fn use_tables() -> UseTablesHandle {
     let update_state = use_state_eq(|| false);
+    let update_table_state = use_state_eq(|| false);
     let tables = use_state_eq(|| Vec::new());
     let table_index = use_state_eq(|| None);
     let table_data = use_state_eq(|| None);
@@ -75,8 +81,6 @@ pub fn use_tables() -> UseTablesHandle {
         let table_data = table_data.clone();
 
         move |_| {
-            let tables = tables.clone();
-            let table_index = table_index.clone();
             let table_data = table_data.clone();
 
             match *table_index {
@@ -94,5 +98,21 @@ pub fn use_tables() -> UseTablesHandle {
         }
     }, table_index.clone());
 
-    UseTablesHandle { update_state, tables, table_index, table_data }
+    use_effect_with_deps({
+        let tables = tables.clone();
+        let table_index = table_index.clone();
+        let table_data = table_data.clone();
+
+        move |_| {
+            if let Some(index) = *table_index {
+                let id = tables[index].id();
+                get_table_with_callback(id, move |table| {
+                    log::info!("Retrieved table:\n{:#?}", &table);
+                    table_data.set(Some(Arc::new(table)));
+                });
+            }
+        }
+    }, update_table_state.clone());
+
+    UseTablesHandle { update_state, update_table_state, tables, table_index, table_data }
 }

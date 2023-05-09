@@ -29,6 +29,15 @@ body {
   overflow: hidden;
 }
 
+textarea {
+  resize: none;
+  width: var(--modal-width);
+  height: 350px;
+  background-color: #09001D;
+  color: #f6f6f6;
+  font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
+}
+
 button {
   background-color: #CD6F07;
   border: 2px solid #E68F03;
@@ -138,13 +147,13 @@ svg.stroke-colour {
 }
 
 .overlay {
-  position: absolute;
+  position: fixed;
   left: 0px;
-  right: 0px;
+  top: 0px;
 }
 
 .overlay-colour {
-  background-color: #0B002890;
+  background-color: #0B0028C0;
 }
 
 .stretch {
@@ -164,6 +173,14 @@ svg.stroke-colour {
 .flex-column {
   display: flex;
   flex-direction: column;
+}
+
+.center-main-axis {
+  justify-content: center;
+}
+
+.center-cross-axis {
+  align-items: center;
 }
 
 .flex-grow-1 {
@@ -199,4 +216,17 @@ svg.stroke-colour {
 
 .button-row button:not(:first-of-type):not(:last-of-type) {
   margin: 0px 2px;
+}
+
+.modal {
+  --modal-width: 310px;
+  width: min-content;
+  height: min-content;
+  background-color: #28006A;
+  border-radius: 20px;
+  padding: 10px;
+}
+
+.modal p {
+  width: var(--modal-width);
 }
