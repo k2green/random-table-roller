@@ -134,6 +134,10 @@ impl TableData {
         self.order
     }
 
+    pub fn set_order(&mut self, order: usize) {
+        self.order = order;
+    }
+
     pub fn set_name(&mut self, name: impl Into<String>) {
         self.name = name.into();
     }

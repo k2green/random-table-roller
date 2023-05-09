@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use web_sys::HtmlInputElement;
 use yew::prelude::*;
 
-use crate::{components::{menu::Menu, table_tabs::TableTabs, modal::Modal}, hooks::prelude::*, glue::{new_table_with_callback, get_save_table_path_with_callback, save_table_with_callback}};
+use crate::{components::{menu::Menu, table_tabs::TableTabs, modal::Modal}, hooks::prelude::*, glue::*};
 
 #[function_component(App)]
 pub fn app() -> Html {
@@ -21,15 +21,41 @@ pub fn app() -> Html {
     };
 
     let save_table = {
+        let is_menu_open = is_menu_open.clone();
         let tables = tables.clone();
 
         Callback::from(move |_: MouseEvent| {
+            let is_menu_open = is_menu_open.clone();
             let tables = tables.clone();
             
             get_save_table_path_with_callback(move |value: Option<PathBuf>| {
+                let is_menu_open = is_menu_open.clone();
                 if let (Some(table), Some(path)) = (tables.get_table_data(), value) {
                     save_table_with_callback(table.id(), path.clone(), move |_| {
+                        is_menu_open.set(false);
                         log::info!("Saved table to {:?}", path);
+                    });
+                }
+            })
+        })
+    };
+
+    let open_table = {
+        let is_menu_open = is_menu_open.clone();
+        let tables = tables.clone();
+
+        Callback::from(move |_: MouseEvent| {
+            let is_menu_open = is_menu_open.clone();
+            let tables = tables.clone();
+            
+            get_open_table_path_with_callback(move |value: Option<PathBuf>| {
+                let is_menu_open = is_menu_open.clone();
+                let tables = tables.clone();
+                
+                if let Some(path) = value {
+                    open_table_with_callback(path, move |_| {
+                        tables.update();
+                        is_menu_open.set(false);
                     });
                 }
             })
@@ -46,6 +72,7 @@ pub fn app() -> Html {
                     <h2>{"Random table tool"}</h2>
                     <button onclick={open_new_table_modal}>{"New"}</button>
                     <button onclick={save_table} disabled={tables.get_selected_index().is_none()}>{"Save"}</button>
+                    <button onclick={open_table}>{"Open"}</button>
                 </Menu>
                 <main class="flex-grow-1 stretch-height no-scroll">
                     <TableTabs tables={tables.clone()} />
