@@ -1,9 +1,13 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+pub mod logging;
+
 use std::{collections::HashMap, sync::{Mutex, MutexGuard}};
 
-use common_data::{BackendError, Table, IdNamePair};
+use common_data::{BackendError, Table, IdNamePair, TableData};
+use log::SetLoggerError;
+use logging::{setup_logging, cleanup_logs};
 use tauri::{State, Manager};
 use uuid::Uuid;
 
@@ -25,9 +29,23 @@ impl AppState {
     }
 }
 
+fn log_result<T, E: std::fmt::Display>(result: Result<T, E>) -> Result<T, E> {
+    if let Err(e) = &result {
+        log::error!("{}", e);
+    }
+
+    result
+}
+
+fn log_error<E: std::fmt::Display>(error: E) -> E {
+    log::error!("{}", &error);
+    error
+}
+
 #[tauri::command]
 fn get_tables(state: State<AppState>) -> Result<Vec<IdNamePair>, BackendError> {
-    let tables = state.lock_tables()?;
+    log::info!("Getting tables...");
+    let tables = log_result(state.lock_tables())?;
     let ids = tables.iter()
         .filter_map(|(k, v)| match v.get_data() {
             Err(_) => None,
@@ -40,16 +58,18 @@ fn get_tables(state: State<AppState>) -> Result<Vec<IdNamePair>, BackendError> {
 
 #[tauri::command]
 fn get_table(state: State<AppState>, id: Uuid) -> Result<Table, BackendError> {
-    let tables = state.lock_tables()?;
+    log::info!("Getting table with id '{}'...", id);
+    let tables = log_result(state.lock_tables())?;
     match tables.get(&id) {
         Some(table) => Ok(table.clone()),
-        None => Err(BackendError::argument_error("id", format!("Could not find table with id '{}'", id)))
+        None => Err(log_error(BackendError::argument_error("id", format!("Could not find table with id '{}'", id))))
     }
 }
 
 #[tauri::command]
 fn new_table(state: State<AppState>, name: String) -> Result<Uuid, BackendError> {
-    let mut tables = state.lock_tables()?;
+    log::info!("Adding new table with name '{}'...", &name);
+    let mut tables = log_result(state.lock_tables())?;
 
     let (id, table) = Table::new(name);
     tables.insert(id, table);
@@ -59,15 +79,17 @@ fn new_table(state: State<AppState>, name: String) -> Result<Uuid, BackendError>
 
 #[tauri::command]
 fn remove_table(state: State<AppState>, id: Uuid) -> Result<Table, BackendError> {
-    let mut tables = state.lock_tables()?;
-    tables.remove(&id).ok_or(BackendError::argument_error("id", format!("Could not find table with id '{}'", id)))
+    log::info!("Removing table with id '{}'...", id);
+    let mut tables = log_result(state.lock_tables())?;
+    tables.remove(&id).ok_or(log_error(BackendError::argument_error("id", format!("Could not find table with id '{}'", id))))
 }
 
 #[tauri::command]
 fn insert_entry(state: State<AppState>, id: Uuid, entry: String) -> Result<(), BackendError> {
-    let mut tables = state.lock_tables()?;
+    log::info!("Adding '{}' to table with id '{}'...", &entry, id);
+    let mut tables = log_result(state.lock_tables())?;
     let table = tables.get_mut(&id)
-        .ok_or(BackendError::argument_error("id", format!("Could not find table with id '{}'", id)))?;
+        .ok_or(log_error(BackendError::argument_error("id", format!("Could not find table with id '{}'", id))))?;
 
     let mut data = table.get_data()?;
     data.push(entry);
@@ -77,43 +99,70 @@ fn insert_entry(state: State<AppState>, id: Uuid, entry: String) -> Result<(), B
 
 #[tauri::command]
 fn remove_entry(state: State<AppState>, id: Uuid, index: usize) -> Result<String, BackendError> {
-    let mut tables = state.lock_tables()?;
+    log::info!("Removing entry {} from table with id '{}'...", index, id);
+    let mut tables = log_result(state.lock_tables())?;
     let table = tables.get_mut(&id)
-        .ok_or(BackendError::argument_error("id", format!("Could not find table with id '{}'", id)))?;
+        .ok_or(log_error(BackendError::argument_error("id", format!("Could not find table with id '{}'", id))))?;
 
     let mut data = table.get_data()?;
     
     data.remove(index)
-        .ok_or(BackendError::argument_error("index", format!("Could not find entry with index '{}'", index)))
+        .ok_or(log_error(BackendError::argument_error("index", format!("Could not find entry with index '{}'", index))))
 }
 
 #[tauri::command]
 fn get_random(state: State<AppState>, id: Uuid) -> Result<String, BackendError> {
-    let tables = state.lock_tables()?;
+    log::info!("Getting random entry from table with id '{}'...", id);
+    let tables = log_result(state.lock_tables())?;
     let table = tables.get(&id)
-        .ok_or(BackendError::argument_error("id", format!("Could not find table with id '{}'", id)))?;
+        .ok_or(log_error(BackendError::argument_error("id", format!("Could not find table with id '{}'", id))))?;
 
     let data = table.get_data()?;
-    let entry = data.get_random().map_err(|e| BackendError::from(e))?;
+    let entry = data.get_random().map_err(|e| log_error(BackendError::from(e)))?;
 
     Ok(entry.to_string())
 }
 
 #[tauri::command]
 fn get_random_set(state: State<AppState>, id: Uuid, count: usize, allow_duplicates: bool) -> Result<Vec<String>, BackendError> {
-    let tables = state.lock_tables()?;
+    log::info!("Getting {} random entries from table with id '{}'...", count, id);
+    let tables = log_result(state.lock_tables())?;
     let table = tables.get(&id)
-        .ok_or(BackendError::argument_error("id", format!("Could not find table with id '{}'", id)))?;
+        .ok_or(log_error(BackendError::argument_error("id", format!("Could not find table with id '{}'", id))))?;
 
     let data = table.get_data()?;
-    let entry = data.get_random_set(count, allow_duplicates).map_err(|e| BackendError::from(e))?;
+    let entry = data.get_random_set(count, allow_duplicates).map_err(|e| log_error(BackendError::from(e)))?;
 
     Ok(entry.into_iter().map(|e| e.to_string()).collect())
 }
 
-fn main() {
+fn get_test_state() -> AppState {
+    let mut tables = HashMap::new();
+
+    for i in 0..5 {
+        let mut table = TableData::new(format!("Test table {}", i));
+        let id = table.id();
+
+        for j in 0..10 {
+            table.push(format!("Table {} entry {}", i, j));
+        }
+
+        tables.insert(id, Table::from(table));
+    }
+
+    AppState { tables: Mutex::new(tables) }
+}
+
+fn main() -> Result<(), SetLoggerError> {
+    cleanup_logs().ok();
+    if let Err(e) = setup_logging() {
+        log::error!("{}", e);
+    }
+
+    log::info!("Starting backend...");
+
     tauri::Builder::default()
-        .manage(AppState::default())
+        .manage(get_test_state())
         .invoke_handler(tauri::generate_handler![
             get_tables,
             get_table,
@@ -135,4 +184,6 @@ fn main() {
         })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+
+    Ok(())
 }

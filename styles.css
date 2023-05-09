@@ -5,7 +5,7 @@
   font-weight: 400;
 
   color: #f6f6f6;
-  background-color: #190045;
+  background-color: #28006A;
 
   padding: 0px;
   margin: 0px;
@@ -36,6 +36,41 @@ button.blank {
   box-shadow: none;
 }
 
+.tab-button {
+  background-color: #1B004A;
+  color: #f6f6f6;
+  border: none;
+  box-shadow: none;
+  margin: 10px 2px 3px;
+}
+
+.tab-button:hover {
+  background-color: #260063;
+}
+
+.tab-button-disabled {
+  background-color: #070016;
+  color: #f6f6f6;
+  border: none;
+  box-shadow: none;
+  margin: 10px 2px 3px;
+}
+
+.tab-button button,.tab-button-disabled button {
+  background-color: transparent;
+  color: #f6f6f6;
+  border: none;
+  box-shadow: none;
+  white-space: nowrap;
+  text-align: left;
+  padding: 3px 5px;
+  margin: 0px;
+}
+
+.tab-button button:first-of-type,.tab-button-disabled button:first-of-type {
+  margin-right: 2px;
+}
+
 svg.fill-colour {
   fill: #f6f6f6;
 }
@@ -46,6 +81,20 @@ svg.stroke-colour {
 
 .no-scroll {
   overflow: hidden;
+}
+
+.scroll {
+  overflow: auto;
+}
+
+.scroll-x {
+  overflow-y: hidden;
+  overflow-x: auto;
+}
+
+.scroll-y {
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .overlay {
@@ -82,11 +131,16 @@ svg.stroke-colour {
 }
 
 .menu-bar {
-  background-color: #0D002D;
+  background-color: #070016;
   padding: 3px 0px;
 }
 
 .menu-content {
-  background-color: #190045;
+  background-color: #28006A;
   padding: 0px 15px;
+}
+
+.tab-bar {
+  background-color: #070016;
+  padding: 0px;
 }
