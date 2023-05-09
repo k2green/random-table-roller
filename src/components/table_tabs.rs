@@ -6,7 +6,7 @@ use uuid::Uuid;
 use web_sys::{HtmlTextAreaElement, HtmlInputElement};
 use yew::prelude::*;
 
-use crate::{hooks::prelude::UseTablesHandle, glue::{remove_table_with_callback, add_entries_with_callback, get_random_set_with_callback, remove_entry_with_callback, change_table_name_with_callback}, components::{modal::Modal, editable_header::EditableHeader}};
+use crate::{hooks::prelude::UseTablesHandle, glue::{remove_table_with_callback, add_entries_with_callback, get_random_set_with_callback, remove_entry_with_callback, change_table_name_with_callback}, components::{modal::Modal, editable_header::EditableHeader, remove_button::RemoveButton}};
 
 #[derive(Debug, Clone, PartialEq, Properties)]
 pub struct TableTabsProps {
@@ -48,7 +48,7 @@ pub fn table_tabs(props: &TableTabsProps) -> Html {
             html! {
                 <div class={classes!(class, "flex-row")}>
                     <button onclick={set_index}>{table.name()}</button>
-                    <button onclick={remove_table}>{"X"}</button>
+                    <RemoveButton on_click={remove_table} />
                 </div>
             }
         })
@@ -79,6 +79,8 @@ fn render_welcome_content() -> Html {
     html! {
         <div class="flex-column flex-grow-1">
             <h1 class="heading">{"Welcome!"}</h1>
+            <p>{"This tool can be used to create random tables for your TTRPGS and use them to generate content."}</p>
+            <p>{"To begin, use the menu on the right side of the screen to create a new table, or load a table from file. Once this is done the table will appear as a tab at the top of the window."}</p>
         </div>
     }
 }
@@ -143,7 +145,7 @@ fn tab_content(props: &TabContentProps) -> Html {
                     <td>
                         <div class="flex-row min-height">
                             <p class="flex-grow-1">{entry}</p>
-                            <button class="table-button" onclick={remove_entry}>{"X"}</button>
+                            <RemoveButton on_click={remove_entry} />
                         </div>
                     </td>
                 </tr>

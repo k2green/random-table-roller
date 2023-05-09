@@ -104,11 +104,14 @@ fn new_table_modal(props: &NewTableModalProps) -> Html {
         Callback::from(move |_: MouseEvent| {
             let tables = tables.clone();
             let is_open = is_open.clone();
+            let name = (*table_name).trim();
 
-            new_table_with_callback(&*table_name, &*entries_text, move |_| {
-                tables.update();
-                is_open.set(false);
-            });
+            if !name.is_empty() {
+                new_table_with_callback(name.to_string(), &*entries_text, move |_| {
+                    tables.update();
+                    is_open.set(false);
+                });
+            }
         })
     };
 
@@ -144,8 +147,8 @@ fn new_table_modal(props: &NewTableModalProps) -> Html {
                 <p>{"Table Name:"}</p>
                 <input class="flex-grow-1" value={(*table_name).clone()} onchange={update_name} />
             </div>
-            <p>{"Initial entries:"}</p>
-            <textarea onchange={update_entries}>{(*entries_text).clone()}</textarea>
+            <p class="restrict-width vert-margin">{"Below you can add the initial entries in the table. Multiple entries can be added by splitting them into multiple lines."}</p>
+            <textarea class="small" onchange={update_entries}>{(*entries_text).clone()}</textarea>
             <div class="flex-row button-row">
                 <button class="flex-grow-1" onclick={add_table}>{"Add Table"}</button>
                 <button class="flex-grow-1" onclick={cancel}>{"Cancel"}</button>
