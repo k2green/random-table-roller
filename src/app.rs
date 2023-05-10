@@ -139,6 +139,7 @@ fn new_table_modal(props: &NewTableModalProps) -> Html {
 
     let add_table = {
         let is_open = is_open.clone();
+        let use_cost = use_cost.clone();
         let tables = tables.clone();
         let table_name = table_name.clone();
         let entries = entries.clone();
@@ -150,7 +151,7 @@ fn new_table_modal(props: &NewTableModalProps) -> Html {
             let entries = (*entries).clone();
 
             if !name.is_empty() {
-                new_table_with_callback(false, name.to_string(), entries, move |_| {
+                new_table_with_callback(*use_cost, name.to_string(), entries, move |_| {
                     tables.update();
                     is_open.set(false);
                 });

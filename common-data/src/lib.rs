@@ -345,6 +345,10 @@ impl TableData {
         self.entries.sort();
     }
 
+    pub fn use_cost(&self) -> bool {
+        self.use_cost
+    }
+
     pub fn id(&self) -> Uuid {
         self.id
     }

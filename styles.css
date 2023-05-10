@@ -146,6 +146,11 @@ table td:nth-of-type(2) {
   padding: 0px 10px;
 }
 
+table td:nth-of-type(3) {
+  white-space: nowrap;
+  padding-left: 8px;
+}
+
 button.blank {
   background-color: transparent;
   color: var(--text-colour);

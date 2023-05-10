@@ -84,6 +84,53 @@ fn render_welcome_content() -> Html {
     }
 }
 
+fn entry_row(index: usize, entry: &TableEntry, id: Uuid, tables: UseTablesHandle, table: Arc<TableData>) -> Html {
+    let remove_entry = {
+        let tables = tables.clone();
+        Callback::from(move |_: MouseEvent| {
+            let tables = tables.clone();
+            remove_entry_with_callback(id, index, move |_| {
+                tables.update_data();
+            });
+        })
+    };
+
+    if table.use_cost() {
+        entry_row_with_cost(index, entry, remove_entry)
+    } else {
+        entry_row_without_cost(index, entry, remove_entry)
+    }
+}
+
+fn entry_row_without_cost(index: usize, entry: &TableEntry, remove_entry: Callback<MouseEvent>) -> Html {
+    html! {
+        <tr>
+            <td>{index + 1}</td>
+            <td>
+                <div class="flex-row min-height">
+                    <p class="flex-grow-1">{entry.name()}</p>
+                    <RemoveButton on_click={remove_entry.clone()} />
+                </div>
+            </td>
+        </tr>
+    }
+}
+
+fn entry_row_with_cost(index: usize, entry: &TableEntry, remove_entry: Callback<MouseEvent>) -> Html {
+    html! {
+        <tr>
+            <td>{index + 1}</td>
+            <td>{entry.name()}</td>
+            <td>
+                <div class="flex-row min-height">
+                    <p class="flex-grow-1">{entry.cost().to_string()}</p>
+                    <RemoveButton on_click={remove_entry.clone()} />
+                </div>
+            </td>
+        </tr>
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Properties)]
 struct TabContentProps {
     tables: UseTablesHandle,
@@ -127,29 +174,7 @@ fn tab_content(props: &TabContentProps) -> Html {
 
     let entries = table.iter()
         .enumerate()
-        .map(|(index, entry)| {
-            let remove_entry = {
-                let tables = tables.clone();
-                Callback::from(move |_: MouseEvent| {
-                    let tables = tables.clone();
-                    remove_entry_with_callback(id, index, move |_| {
-                        tables.update_data();
-                    });
-                })
-            };
-
-            html! {
-                <tr>
-                    <td>{index + 1}</td>
-                    <td>
-                        <div class="flex-row min-height">
-                            <p class="flex-grow-1">{entry.name()}</p>
-                            <RemoveButton on_click={remove_entry} />
-                        </div>
-                    </td>
-                </tr>
-            }
-        })
+        .map(|(index, entry)| entry_row(index, entry, id, tables.clone(), table.clone()))
         .collect::<Html>();
 
     html! {
@@ -170,6 +195,9 @@ fn tab_content(props: &TabContentProps) -> Html {
                         <tr>
                             <th>{"Roll"}</th>
                             <th>{"Entry"}</th>
+                            if table.use_cost() {
+                                <th>{"Cost"}</th>
+                            }
                         </tr>
                     </thead>
                     <tbody>
