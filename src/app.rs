@@ -212,12 +212,10 @@ fn new_table_modal(props: &NewTableModalProps) -> Html {
                 <input class="flex-grow-1" value={(*table_name).clone()} onchange={update_name} />
             </div>
             <p class="vert-margin">{"Below you can add the initial entries in the table. Multiple entries can be added by splitting them into multiple lines."}</p>
-            <div class="flex-column flex-grow-1">
-                <div class="flex-column flex-grow-1 table-style">
-                    <h2>{"Table entries"}</h2>
-                    <div class="flex-column content">
-                    {entry_items}
-                    </div>
+            <div class="flex-column flex-grow-1 table-style">
+                <h2>{"Table entries"}</h2>
+                <div class="flex-column content">
+                {entry_items}
                 </div>
             </div>
             <div class="flex-row button-row">

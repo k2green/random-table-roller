@@ -3,10 +3,10 @@ use std::sync::Arc;
 use common_data::{TableData, RollResult};
 use regex::Regex;
 use uuid::Uuid;
-use web_sys::{HtmlTextAreaElement, HtmlInputElement};
+use web_sys::HtmlInputElement;
 use yew::prelude::*;
 
-use crate::{hooks::prelude::UseTablesHandle, glue::{remove_table_with_callback, add_entries_with_callback, get_random_set_with_callback, remove_entry_with_callback, change_table_name_with_callback}, components::{modal::Modal, editable_header::EditableHeader, remove_button::RemoveButton}};
+use crate::{hooks::prelude::{UseTablesHandle, use_vec_state}, glue::*, components::{modal::Modal, editable_header::EditableHeader, remove_button::RemoveButton, full_page_modal::FullPageModal}};
 
 #[derive(Debug, Clone, PartialEq, Properties)]
 pub struct TableTabsProps {
@@ -346,25 +346,18 @@ struct AddEntryModalProps {
 #[function_component(AddEntryModal)]
 fn add_entry_modal(props: &AddEntryModalProps) -> Html {
     let AddEntryModalProps { is_open, tables, id } = props.clone();
-    let text = use_state_eq(|| String::new());
-
-    let update_text = {
-        let text = text.clone();
-        Callback::from(move |e: Event| {
-            let target: HtmlTextAreaElement = e.target_unchecked_into();
-            text.set(target.value());
-        })
-    };
+    let entries = use_vec_state(|| Vec::<String>::new());
+    let disable_add = entries.len() == 0 || entries.iter().any(|e| e.trim().is_empty());
 
     let add_entries = {
         let is_open = is_open.clone();
-        let text = text.clone();
+        let entries = entries.clone();
         let tables = tables.clone();
 
         Callback::from(move |_: MouseEvent| {
             let is_open = is_open.clone();
             let tables = tables.clone();
-            add_entries_with_callback(id, &*text, move |_| {
+            add_entries_with_callback(id, (*entries).clone(), move |_| {
                 tables.update_data();
                 is_open.set(false);
             })
@@ -378,15 +371,62 @@ fn add_entry_modal(props: &AddEntryModalProps) -> Html {
         })
     };
 
+    let insert_new = {
+        let entries = entries.clone();
+        Callback::from(move |_: MouseEvent| {
+            entries.insert(String::new());
+        })
+    };
+
+    let entry_items = entries.iter()
+        .enumerate()
+        .map(|(index, entry)| {
+            let update_entry = {
+                let entries = entries.clone();
+                Callback::from(move |e: Event| {
+                    let target: HtmlInputElement = e.target_unchecked_into();
+                    let new_entry = target.value();
+                    entries.update(move |entry_index, old| if entry_index == index {
+                        new_entry.trim().to_string()
+                    } else {
+                        old.clone()
+                    })
+                })
+            };
+
+            let remove_entry = {
+                let entries = entries.clone();
+                Callback::from(move |_: MouseEvent| {
+                    entries.remove(index);
+                })
+            };
+
+            html! {
+                <div class="flex-row">
+                    <input class="flex-grow-1" value={entry.clone()} onchange={update_entry} />
+                    <RemoveButton on_click={remove_entry} />
+                </div>
+            }
+        })
+        .collect::<Html>();
+
     html! {
-        <Modal>
+        <FullPageModal>
             <h3 class="heading">{"Add entries"}</h3>
-            <p class="restrict-width">{"This is where you add new entries to your table. Multiple entries can be added by separating them onto new lines and empty lines will be ignored."}</p>
-            <textarea onchange={update_text}>{&*text}</textarea>
+            <p>{"Here you can add new entries to your table. Use the '+' button to add a new entry."}</p>
+            <div class="flex-column flex-grow-1 table-style">
+                <h2>{"Table entries"}</h2>
+                <div class="flex-column content">
+                    {entry_items}
+                </div>
+            </div>
             <div class="flex-row button-row">
-                <button class="flex-grow-1" onclick={add_entries}>{"Add Entries"}</button>
+                <button class="flex-grow-1" onclick={insert_new}>{"+"}</button>
+            </div>
+            <div class="flex-row button-row">
+                <button class="flex-grow-1" onclick={add_entries} disabled={disable_add}>{"Add Entries"}</button>
                 <button class="flex-grow-1" onclick={cancel}>{"Cancel"}</button>
             </div>
-        </Modal>
+        </FullPageModal>
     }
 }
