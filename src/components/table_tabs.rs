@@ -1,12 +1,11 @@
 use std::sync::Arc;
 
 use common_data::{TableData, RollResult, TableEntry};
-use regex::Regex;
 use uuid::Uuid;
 use web_sys::HtmlInputElement;
 use yew::prelude::*;
 
-use crate::{hooks::prelude::{UseTablesHandle, use_vec_state}, glue::*, components::{modal::Modal, editable_header::EditableHeader, remove_button::RemoveButton, full_page_modal::FullPageModal}};
+use crate::{hooks::prelude::{UseTablesHandle, use_vec_state}, glue::*, components::{modal::Modal, editable_header::EditableHeader, remove_button::RemoveButton, full_page_modal::FullPageModal}, try_parse_number};
 
 #[derive(Debug, Clone, PartialEq, Properties)]
 pub struct TableTabsProps {
@@ -290,20 +289,15 @@ fn random_roll_modal(props: &RandomRollModalProps) -> Html {
 
         Callback::from(move |e: Event| {
             let target: HtmlInputElement = e.target_unchecked_into();
-            if let Ok(pattern) = Regex::new(r"^[ \n\r\t]*(\d+)[ \n\r\t]*$") {
-                if let Some(captures) = pattern.captures(&target.value()) {
-                    if let Some(capture) = captures.get(1) {
-                        if let Ok(parsed) = usize::from_str_radix(capture.as_str(), 10) {
-                            let mut new_value = parsed.max(1);
+            let target_value = target.value();
+            if let Some(parsed) = try_parse_number(&target_value) {
+                let mut new_value = parsed.max(1);
 
-                            if !*allow_duplicates {
-                                new_value = new_value.min(table.len());
-                            }
-
-                            random_roll_count.set(new_value);
-                        }
-                    }
+                if !*allow_duplicates {
+                    new_value = new_value.min(table.len());
                 }
+
+                random_roll_count.set(new_value);
             }
         })
     };

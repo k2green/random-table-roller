@@ -6,6 +6,7 @@ pub mod hooks;
 use std::future::Future;
 
 use app::App;
+use regex::Regex;
 use yew::Callback;
 
 pub(crate) async fn emit_callback_if_ok<T, E: std::fmt::Display, F: Future<Output = Result<T, E>>>(future: F, callback: Callback<T>) {
@@ -13,6 +14,13 @@ pub(crate) async fn emit_callback_if_ok<T, E: std::fmt::Display, F: Future<Outpu
         Ok(result) => callback.emit(result),
         Err(e) => log::error!("Failed to emit callback: {}", e)
     }
+}
+
+pub(crate) fn try_parse_number(s: &str) -> Option<usize> {
+    let pattern = Regex::new(r"^[ \n\r\t]*(\d+)[ \n\r\t]*$").ok()?;
+    let captures = pattern.captures(s)?;
+    let capture = captures.get(1)?.as_str();
+    usize::from_str_radix(capture, 10).ok()
 }
 
 #[derive(Debug)]
