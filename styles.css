@@ -100,6 +100,10 @@ table tbody p {
   margin: 3px 0px;
 }
 
+table tbody input {
+  width: 100%;
+}
+
 table th {
   text-align: left;
 }
@@ -112,9 +116,9 @@ table td:first-of-type {
   text-align: center;
 }
 
-table td:last-of-type {
+table td:nth-of-type(2) {
   width: 99%;
-  padding-left: 10px;
+  padding: 0px 10px;
 }
 
 button.blank {
@@ -303,6 +307,10 @@ svg.stroke-colour {
   padding: 10px 20px;
 }
 
+.button-row {
+  margin-top: 10px;
+}
+
 .button-row button:first-of-type:not(:last-of-type) {
   margin-right: 2px;
 }
@@ -327,11 +335,24 @@ svg.stroke-colour {
   overflow: none;
 }
 
+.modal-full {
+  background-color: #28006A;
+  width: 100vw;
+  width: 100dvw;
+  height: 100vh;
+  height: 100dvh;
+}
+
+.modal-full .content {
+  padding: 10px;
+  flex: 1;
+}
+
 .modal p.restrict-width {
   width: var(--modal-width);
 }
 
-.modal p {
+.modal p,.modal-full p {
   margin: 0px;
 }
 
@@ -356,4 +377,20 @@ input.table-name {
 .vert-margin {
   margin: 10px 0px;
   padding: 10px 0px;
+}
+
+.table-style {
+  border: 1px solid #0E002A;
+  background-color: #0E002A;
+  border-radius: 10px;
+  padding: 0px 3px;
+}
+
+.table-style .content {
+  background-color: #1B004A;
+  margin: 0px 5px 10px;
+}
+
+.table-style .content > * {
+  margin: 2px 0px;
 }
