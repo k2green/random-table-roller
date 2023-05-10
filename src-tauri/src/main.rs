@@ -5,7 +5,7 @@ pub mod logging;
 
 use std::{collections::HashMap, sync::{Mutex, MutexGuard}, cmp::Ordering, path::PathBuf, fs::{self, File}};
 
-use common_data::{BackendError, Table, IdNamePair, TableData, RollResult};
+use common_data::{BackendError, Table, IdNamePair, TableData, RollResult, FileTableData};
 use log::SetLoggerError;
 use logging::{setup_logging, cleanup_logs};
 use tauri::{State, Manager};
@@ -188,14 +188,19 @@ fn save_table(state: State<AppState>, id: Uuid, path: PathBuf) -> Result<(), Bac
     let table = log_result(tables.get(&id)
         .ok_or(BackendError::argument_error("id", format!("Could not find table with id '{}'", id))))?;
 
+    let mut data = log_result(table.get_data())?;
+    let file_data = data.to_file_data();
+
     if let Some(parent) = path.parent() {
         if !parent.exists() {
             log_result(fs::create_dir_all(parent).map_err(BackendError::from))?;
         }
     }
 
-    let file = log_result(File::create(path).map_err(BackendError::from))?;
-    log_result(serde_json::to_writer_pretty(file, table).map_err(BackendError::from))?;
+    let file = log_result(File::create(&path).map_err(BackendError::from))?;
+    log_result(serde_json::to_writer_pretty(file, &file_data).map_err(BackendError::from))?;
+
+    data.set_path(Some(path));
 
     Ok(())
 }
@@ -203,8 +208,9 @@ fn save_table(state: State<AppState>, id: Uuid, path: PathBuf) -> Result<(), Bac
 #[tauri::command]
 fn open_table(state: State<AppState>, path: PathBuf) -> Result<(), BackendError> {
     let mut tables = log_result(state.lock_tables())?;
-    let file = log_result(File::open(path).map_err(BackendError::from))?;
-    let mut table_data: TableData = log_result(serde_json::from_reader(file).map_err(BackendError::from))?;
+    let file = log_result(File::open(&path).map_err(BackendError::from))?;
+    let table_data: FileTableData = log_result(serde_json::from_reader(file).map_err(BackendError::from))?;
+    let mut table_data = table_data.into_table_data(tables.len(), Some(path));
     let id = table_data.id();
 
     table_data.set_order(tables.len());

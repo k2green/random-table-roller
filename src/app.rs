@@ -5,6 +5,37 @@ use yew::prelude::*;
 
 use crate::{components::{menu::Menu, table_tabs::TableTabs, modal::Modal}, hooks::prelude::*, glue::*};
 
+fn save_table(is_menu_open: UseStateHandle<bool>, tables: UseTablesHandle) {
+    let is_menu_open = is_menu_open.clone();
+    let tables = tables.clone();
+    
+    if let Some(table) = tables.get_table_data() {
+        if let Some(path) = table.path() {
+            save_table_with_callback(table.id(), path.to_path_buf(), move |_| {
+                is_menu_open.set(false);
+                log::info!("Saved table to {:?}", path);
+            });
+        }
+    } 
+}
+
+fn save_table_as(is_menu_open: UseStateHandle<bool>, tables: UseTablesHandle) {
+    let is_menu_open = is_menu_open.clone();
+    let tables = tables.clone();
+    
+    get_save_table_path_with_callback(move |value: Option<PathBuf>| {
+        let is_menu_open = is_menu_open.clone();
+        let tables = tables.clone();
+        if let (Some(table), Some(path)) = (tables.get_table_data(), value) {
+            save_table_with_callback(table.id(), path.clone(), move |_| {
+                is_menu_open.set(false);
+                tables.update_data();
+                log::info!("Saved table to {:?}", path);
+            });
+        }
+    })
+}
+
 #[function_component(App)]
 pub fn app() -> Html {
     let is_menu_open = use_state_eq(|| false);
@@ -24,20 +55,14 @@ pub fn app() -> Html {
         let is_menu_open = is_menu_open.clone();
         let tables = tables.clone();
 
-        Callback::from(move |_: MouseEvent| {
-            let is_menu_open = is_menu_open.clone();
-            let tables = tables.clone();
-            
-            get_save_table_path_with_callback(move |value: Option<PathBuf>| {
-                let is_menu_open = is_menu_open.clone();
-                if let (Some(table), Some(path)) = (tables.get_table_data(), value) {
-                    save_table_with_callback(table.id(), path.clone(), move |_| {
-                        is_menu_open.set(false);
-                        log::info!("Saved table to {:?}", path);
-                    });
-                }
-            })
-        })
+        Callback::from(move |_: MouseEvent| save_table(is_menu_open.clone(), tables.clone()))
+    };
+
+    let save_table_as = {
+        let is_menu_open = is_menu_open.clone();
+        let tables = tables.clone();
+
+        Callback::from(move |_: MouseEvent| save_table_as(is_menu_open.clone(), tables.clone()))
     };
 
     let open_table = {
@@ -62,6 +87,11 @@ pub fn app() -> Html {
         })
     };
 
+    let is_save_disabled = match tables.get_table_data() {
+        Some(data) => data.path().is_none(),
+        _ => true
+    };
+
     html! {
         <>
             if *is_new_table_modal_open {
@@ -71,7 +101,8 @@ pub fn app() -> Html {
                 <Menu is_open={is_menu_open}>
                     <h2>{"Random table tool"}</h2>
                     <button onclick={open_new_table_modal}>{"New"}</button>
-                    <button onclick={save_table} disabled={tables.get_selected_index().is_none()}>{"Save"}</button>
+                    <button onclick={save_table} disabled={is_save_disabled}>{"Save"}</button>
+                    <button onclick={save_table_as} disabled={tables.get_selected_index().is_none()}>{"Save As"}</button>
                     <button onclick={open_table}>{"Open"}</button>
                 </Menu>
                 <main class="flex-grow-1 stretch-height no-scroll">
