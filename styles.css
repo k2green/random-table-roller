@@ -73,7 +73,7 @@ input {
   border-radius: 5px;
   color: var(--text-colour);
   font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
-  padding: 5px 0px 6px;
+  padding: 5px 10px 6px;
 }
 
 input::-webkit-outer-spin-button,
@@ -478,6 +478,10 @@ input.table-name {
 
 .select-dropdown > div {
   cursor: pointer;
+}
+
+.select-dropdown p {
+  text-align: left;
 }
 
 .select-dropdown > div:hover {

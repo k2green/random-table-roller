@@ -7,12 +7,16 @@ use yew_icons::{Icon, IconId};
 pub struct SelectProps<T: Clone + PartialEq + Display + 'static> {
     pub items: Arc<Vec<T>>,
     #[prop_or_default]
+    pub parent_class: Classes,
+    #[prop_or_default]
+    pub select_class: Classes,
+    #[prop_or_default]
     pub on_change: Callback<T>
 }
 
 #[function_component(Select)]
 pub fn select<T: Clone + PartialEq + Display + 'static>(props: &SelectProps<T>) -> Html {
-    let SelectProps { items, on_change } = props.clone();
+    let SelectProps { parent_class, select_class, items, on_change } = props.clone();
     let selected_index = use_state_eq(|| 0_usize);
     let is_focused = use_state_eq(|| false);
     let selected_item = &items[*selected_index];
@@ -59,8 +63,8 @@ pub fn select<T: Clone + PartialEq + Display + 'static>(props: &SelectProps<T>) 
         .collect::<Html>();
 
     html! {
-        <div class="select">
-            <div class="content flex-row center-cross-axis" tabindex="-1" onfocus={set_focused} onfocusout={clear_focus}>
+        <div class={classes!(parent_class, "select")}>
+            <div class={classes!(select_class, "content", "flex-row", "center-cross-axis")} tabindex="-1" onfocus={set_focused} onfocusout={clear_focus}>
                 <p class="flex-grow-1">{selected_item.to_string()}</p>
                 <Icon icon_id={icon_id} class="fill-colour" width="15px" height="15px" />
             </div>
