@@ -121,14 +121,14 @@ fn change_table_name(state: State<AppState>, id: Uuid, name: String) -> Result<(
 }
 
 #[tauri::command]
-fn add_entries(state: State<AppState>, id: Uuid, entries: String) -> Result<(), BackendError> {
+fn add_entries(state: State<AppState>, id: Uuid, entries: Vec<String>) -> Result<(), BackendError> {
     log::info!("Adding '{:?}' to table with id '{}'...", &entries, id);
     let mut tables = log_result(state.lock_tables())?;
     let table = log_result(tables.get_mut(&id)
         .ok_or(BackendError::argument_error("id", format!("Could not find table with id '{}'", id))))?;
 
     let mut data = table.get_data()?;
-    for line in entries.lines() {
+    for line in entries {
         let trimmed = line.trim();
 
         if !trimmed.is_empty() {

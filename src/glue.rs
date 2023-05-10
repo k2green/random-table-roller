@@ -77,16 +77,16 @@ pub fn change_table_name_with_callback(id: Uuid, name: impl Into<String>, callba
 #[derive(Debug, Clone, Serialize)]
 struct AddEntriesArgs {
     id: Uuid,
-    entries: String
+    entries: Vec<String>
 }
 
-pub async fn add_entries(id: Uuid, entries: impl Into<String>) -> Result<(), Error> {
-    let args = serde_wasm_bindgen::to_value(&AddEntriesArgs { id, entries: entries.into() }).map_err_and_log(Error::SerdeWasmBindgenError)?;
+pub async fn add_entries(id: Uuid, entries: Vec<String>) -> Result<(), Error> {
+    let args = serde_wasm_bindgen::to_value(&AddEntriesArgs { id, entries }).map_err_and_log(Error::SerdeWasmBindgenError)?;
     unit_from_result(invoke("add_entries", args).await)
 }
 
-pub fn add_entries_with_callback(id: Uuid, entry: impl Into<String>, callback: impl Into<Callback<()>>) {
-    wasm_bindgen_futures::spawn_local(emit_callback_if_ok(add_entries(id, entry.into()), callback.into()));
+pub fn add_entries_with_callback(id: Uuid, entries: Vec<String>, callback: impl Into<Callback<()>>) {
+    wasm_bindgen_futures::spawn_local(emit_callback_if_ok(add_entries(id, entries), callback.into()));
 }
 
 #[derive(Debug, Clone, Serialize)]
