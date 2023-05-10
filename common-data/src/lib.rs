@@ -1,4 +1,4 @@
-use std::{sync::{Mutex, Arc, MutexGuard}, slice::Iter, collections::HashMap};
+use std::{sync::{Mutex, Arc, MutexGuard}, slice::Iter, collections::HashMap, path::PathBuf};
 
 use rand::{SeedableRng, rngs::StdRng, Rng};
 use serde::{Serialize, Deserialize};
@@ -91,12 +91,31 @@ impl RollResult {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct FileTableData {
+    name: String,
+    entries: Vec<String>,
+}
+
+impl FileTableData {
+    pub fn into_table_data(self, order: usize, path: Option<PathBuf>) -> TableData {
+        TableData {
+            id: Uuid::new_v4(),
+            order,
+            name: self.name,
+            entries: self.entries,
+            path
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TableData {
     id: Uuid,
     #[serde(skip)]
     order: usize,
     name: String,
-    entries: Vec<String>
+    entries: Vec<String>,
+    path: Option<PathBuf>
 }
 
 impl TableData {
@@ -106,6 +125,7 @@ impl TableData {
             id: Uuid::new_v4(),
             name: name.into(),
             entries: Vec::new(),
+            path: None
         }
     }
 
@@ -115,6 +135,14 @@ impl TableData {
             id: Uuid::new_v4(),
             name: name.into(),
             entries: Vec::with_capacity(capacity),
+            path: None
+        }
+    }
+
+    pub fn to_file_data(&self) -> FileTableData {
+        FileTableData {
+            name: self.name.clone(),
+            entries: self.entries.clone()
         }
     }
 
@@ -140,6 +168,14 @@ impl TableData {
 
     pub fn set_name(&mut self, name: impl Into<String>) {
         self.name = name.into();
+    }
+
+    pub fn path(&self) -> Option<PathBuf> {
+        self.path.clone()
+    }
+
+    pub fn set_path(&mut self, path: Option<PathBuf>) {
+        self.path = path;
     }
 
     pub fn len(&self) -> usize {
