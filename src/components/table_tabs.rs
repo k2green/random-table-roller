@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
-use common_data::{TableData, RollResult, TableEntry};
+use common_data::{TableData, RollResult, TableEntry, Currency};
 use uuid::Uuid;
 use web_sys::HtmlInputElement;
 use yew::prelude::*;
 
-use crate::{hooks::prelude::{UseTablesHandle, use_vec_state}, glue::*, components::{modal::Modal, editable_header::EditableHeader, remove_button::RemoveButton, full_page_modal::FullPageModal}, try_parse_number};
+use crate::{hooks::prelude::{UseTablesHandle, use_vec_state}, glue::*, components::{modal::Modal, editable_header::EditableHeader, remove_button::RemoveButton, full_page_modal::FullPageModal, currency_field::CurrencyField}, try_parse_number};
 
 #[derive(Debug, Clone, PartialEq, Properties)]
 pub struct TableTabsProps {
@@ -370,6 +370,7 @@ fn add_entry_modal(props: &AddEntryModalProps) -> Html {
     let AddEntryModalProps { is_open, tables, id } = props.clone();
     let entries = use_vec_state(|| Vec::<TableEntry>::new());
     let disable_add = entries.len() == 0 || entries.iter().all(|e| e.name().trim().is_empty());
+    let table = tables.get_table_data().unwrap();
 
     let add_entries = {
         let is_open = is_open.clone();
@@ -418,6 +419,19 @@ fn add_entry_modal(props: &AddEntryModalProps) -> Html {
                 })
             };
 
+            let currency_changed = {
+                let entries = entries.clone();
+                Callback::from(move |c: Currency| {
+                    entries.update(move |entry_index, old| if entry_index == index {
+                        let mut new = old.clone();
+                        new.set_cost(c);
+                        new
+                    } else {
+                        old.clone()
+                    })
+                })
+            };
+
             let remove_entry = {
                 let entries = entries.clone();
                 Callback::from(move |_: MouseEvent| {
@@ -428,6 +442,9 @@ fn add_entry_modal(props: &AddEntryModalProps) -> Html {
             html! {
                 <div class="flex-row">
                     <input class="flex-grow-1" value={entry.name().to_string()} onchange={update_entry} />
+                    if table.use_cost() {
+                        <CurrencyField on_change={currency_changed} />
+                    }
                     <RemoveButton on_click={remove_entry} />
                 </div>
             }
