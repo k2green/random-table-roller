@@ -5,7 +5,7 @@ pub mod logging;
 
 use std::{collections::HashMap, sync::{Mutex, MutexGuard}, cmp::Ordering, path::PathBuf, fs::{self, File}};
 
-use common_data::{BackendError, Table, IdNamePair, TableData, RollResult, FileTableData};
+use common_data::{BackendError, Table, IdNamePair, TableData, RollResult, FileTableData, TableEntry};
 use log::SetLoggerError;
 use logging::{setup_logging, cleanup_logs};
 use tauri::{State, Manager};
@@ -80,18 +80,19 @@ fn get_table(state: State<AppState>, id: Uuid) -> Result<Table, BackendError> {
 }
 
 #[tauri::command]
-fn new_table(state: State<AppState>, name: String, entries: Vec<String>) -> Result<Uuid, BackendError> {
+fn new_table(state: State<AppState>, use_cost: bool, name: String, entries: Vec<TableEntry>) -> Result<Uuid, BackendError> {
     log::info!("Adding new table with name '{}'...", &name);
     let mut tables = log_result(state.lock_tables())?;
 
-    let mut table_data = TableData::new(name, tables.len());
+    let mut table_data = TableData::new(use_cost, name, tables.len());
     let id = table_data.id();
 
-    for entry in entries {
-        let trimmed = entry.trim();
+    for mut entry in entries {
+        let trimmed = entry.name().trim().to_string();
+        entry.set_name(&trimmed);
 
         if !trimmed.is_empty() {
-            table_data.push(trimmed);
+            table_data.push(entry);
         }
     }
 
@@ -121,18 +122,19 @@ fn change_table_name(state: State<AppState>, id: Uuid, name: String) -> Result<(
 }
 
 #[tauri::command]
-fn add_entries(state: State<AppState>, id: Uuid, entries: Vec<String>) -> Result<(), BackendError> {
+fn add_entries(state: State<AppState>, id: Uuid, entries: Vec<TableEntry>) -> Result<(), BackendError> {
     log::info!("Adding '{:?}' to table with id '{}'...", &entries, id);
     let mut tables = log_result(state.lock_tables())?;
     let table = log_result(tables.get_mut(&id)
         .ok_or(BackendError::argument_error("id", format!("Could not find table with id '{}'", id))))?;
 
     let mut data = table.get_data()?;
-    for line in entries {
-        let trimmed = line.trim();
+    for mut entry in entries {
+        let trimmed = entry.name().trim().to_string();
+        entry.set_name(&trimmed);
 
         if !trimmed.is_empty() {
-            data.push(line);
+            data.push(entry);
         }
     }
 
@@ -142,7 +144,7 @@ fn add_entries(state: State<AppState>, id: Uuid, entries: Vec<String>) -> Result
 }
 
 #[tauri::command]
-fn remove_entry(state: State<AppState>, id: Uuid, index: usize) -> Result<String, BackendError> {
+fn remove_entry(state: State<AppState>, id: Uuid, index: usize) -> Result<TableEntry, BackendError> {
     log::info!("Removing entry {} from table with id '{}'...", index, id);
     let mut tables = log_result(state.lock_tables())?;
     let table = log_result(tables.get_mut(&id)
@@ -155,7 +157,7 @@ fn remove_entry(state: State<AppState>, id: Uuid, index: usize) -> Result<String
 }
 
 #[tauri::command]
-fn get_random(state: State<AppState>, id: Uuid) -> Result<String, BackendError> {
+fn get_random(state: State<AppState>, id: Uuid) -> Result<TableEntry, BackendError> {
     log::info!("Getting random entry from table with id '{}'...", id);
     let tables = log_result(state.lock_tables())?;
     let table = log_result(tables.get(&id)
@@ -164,7 +166,7 @@ fn get_random(state: State<AppState>, id: Uuid) -> Result<String, BackendError> 
     let data = table.get_data()?;
     let entry = log_result(data.get_random().map_err(|e| BackendError::from(e)))?;
 
-    Ok(entry.to_string())
+    Ok(entry.clone())
 }
 
 #[tauri::command]
