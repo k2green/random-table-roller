@@ -33,16 +33,16 @@ pub fn get_table_with_callback(id: Uuid, callback: impl Into<Callback<TableData>
 #[derive(Debug, Clone, Serialize)]
 struct NewTableArgs {
     name: String,
-    entries: String
+    entries: Vec<String>
 }
 
-pub async fn new_table(name: impl Into<String>, entries: impl Into<String>) -> Result<Uuid, Error> {
-    let args = serde_wasm_bindgen::to_value(&NewTableArgs { name: name.into(), entries: entries.into() }).map_err_and_log(Error::SerdeWasmBindgenError)?;
+pub async fn new_table(name: impl Into<String>, entries: Vec<String>) -> Result<Uuid, Error> {
+    let args = serde_wasm_bindgen::to_value(&NewTableArgs { name: name.into(), entries }).map_err_and_log(Error::SerdeWasmBindgenError)?;
     from_result(invoke("new_table", args).await)
 }
 
-pub fn new_table_with_callback(name: impl Into<String>, entries: impl Into<String>, callback: impl Into<Callback<Uuid>>) {
-    wasm_bindgen_futures::spawn_local(emit_callback_if_ok(new_table(name.into(), entries.into()), callback.into()));
+pub fn new_table_with_callback(name: impl Into<String>, entries: Vec<String>, callback: impl Into<Callback<Uuid>>) {
+    wasm_bindgen_futures::spawn_local(emit_callback_if_ok(new_table(name.into(), entries), callback.into()));
 }
 
 #[derive(Debug, Clone, Copy, Serialize)]
