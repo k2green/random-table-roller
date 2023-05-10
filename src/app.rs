@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+use common_data::TableEntry;
 use web_sys::HtmlInputElement;
 use yew::prelude::*;
 
@@ -124,7 +125,7 @@ struct NewTableModalProps {
 fn new_table_modal(props: &NewTableModalProps) -> Html {
     let NewTableModalProps { tables, is_open, is_menu_open } = props.clone();
     let table_name = use_state_eq(|| String::new());
-    let entries = use_vec_state(|| Vec::<String>::new());
+    let entries = use_vec_state(|| Vec::<TableEntry>::new());
     let disable_add_button = table_name.trim().is_empty();
 
     let add_table = {
@@ -140,7 +141,7 @@ fn new_table_modal(props: &NewTableModalProps) -> Html {
             let entries = (*entries).clone();
 
             if !name.is_empty() {
-                new_table_with_callback(name.to_string(), entries, move |_| {
+                new_table_with_callback(false, name.to_string(), entries, move |_| {
                     tables.update();
                     is_open.set(false);
                 });
@@ -168,7 +169,7 @@ fn new_table_modal(props: &NewTableModalProps) -> Html {
     let insert_new = {
         let entries = entries.clone();
         Callback::from(move |_: MouseEvent| {
-            entries.insert(String::new());
+            entries.insert(TableEntry::new());
         })
     };
 
@@ -181,7 +182,9 @@ fn new_table_modal(props: &NewTableModalProps) -> Html {
                     let target: HtmlInputElement = e.target_unchecked_into();
                     let new_entry = target.value();
                     entries.update(move |entry_index, old| if entry_index == index {
-                        new_entry.trim().to_string()
+                        let mut new = old.clone();
+                        new.set_name(new_entry.trim());
+                        new
                     } else {
                         old.clone()
                     })
@@ -197,7 +200,7 @@ fn new_table_modal(props: &NewTableModalProps) -> Html {
 
             html! {
                 <div class="flex-row">
-                    <input class="flex-grow-1" value={entry.clone()} onchange={update_entry} />
+                    <input class="flex-grow-1" value={entry.name().to_string()} onchange={update_entry} />
                     <RemoveButton on_click={remove_entry} />
                 </div>
             }

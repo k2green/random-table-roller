@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use common_data::{TableData, RollResult};
+use common_data::{TableData, RollResult, TableEntry};
 use regex::Regex;
 use uuid::Uuid;
 use web_sys::HtmlInputElement;
@@ -144,7 +144,7 @@ fn tab_content(props: &TabContentProps) -> Html {
                     <td>{index + 1}</td>
                     <td>
                         <div class="flex-row min-height">
-                            <p class="flex-grow-1">{entry}</p>
+                            <p class="flex-grow-1">{entry.name()}</p>
                             <RemoveButton on_click={remove_entry} />
                         </div>
                     </td>
@@ -207,7 +207,7 @@ fn roll_results_modal(props: &RollResultsProps) -> Html {
         .map(|res| html! {
             <tr>
                 <td class="align-right"><p>{format!("{}x", res.count())}</p></td>
-                <td><p>{res.entry()}</p></td>
+                <td><p>{res.entry().name()}</p></td>
             </tr>
         })
         .collect::<Html>();
@@ -346,8 +346,8 @@ struct AddEntryModalProps {
 #[function_component(AddEntryModal)]
 fn add_entry_modal(props: &AddEntryModalProps) -> Html {
     let AddEntryModalProps { is_open, tables, id } = props.clone();
-    let entries = use_vec_state(|| Vec::<String>::new());
-    let disable_add = entries.len() == 0 || entries.iter().any(|e| e.trim().is_empty());
+    let entries = use_vec_state(|| Vec::<TableEntry>::new());
+    let disable_add = entries.len() == 0 || entries.iter().all(|e| e.name().trim().is_empty());
 
     let add_entries = {
         let is_open = is_open.clone();
@@ -374,7 +374,7 @@ fn add_entry_modal(props: &AddEntryModalProps) -> Html {
     let insert_new = {
         let entries = entries.clone();
         Callback::from(move |_: MouseEvent| {
-            entries.insert(String::new());
+            entries.insert(TableEntry::new());
         })
     };
 
@@ -387,7 +387,9 @@ fn add_entry_modal(props: &AddEntryModalProps) -> Html {
                     let target: HtmlInputElement = e.target_unchecked_into();
                     let new_entry = target.value();
                     entries.update(move |entry_index, old| if entry_index == index {
-                        new_entry.trim().to_string()
+                        let mut new = old.clone();
+                        new.set_name(new_entry.trim());
+                        new
                     } else {
                         old.clone()
                     })
@@ -403,7 +405,7 @@ fn add_entry_modal(props: &AddEntryModalProps) -> Html {
 
             html! {
                 <div class="flex-row">
-                    <input class="flex-grow-1" value={entry.clone()} onchange={update_entry} />
+                    <input class="flex-grow-1" value={entry.name().to_string()} onchange={update_entry} />
                     <RemoveButton on_click={remove_entry} />
                 </div>
             }

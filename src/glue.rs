@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use common_data::{IdNamePair, TableData, RollResult};
+use common_data::{IdNamePair, TableData, RollResult, TableEntry};
 use serde::Serialize;
 use uuid::Uuid;
 use wasm_bindgen::prelude::*;
@@ -32,17 +32,19 @@ pub fn get_table_with_callback(id: Uuid, callback: impl Into<Callback<TableData>
 
 #[derive(Debug, Clone, Serialize)]
 struct NewTableArgs {
+    #[serde(rename = "useCost")]
+    use_cost: bool,
     name: String,
-    entries: Vec<String>
+    entries: Vec<TableEntry>
 }
 
-pub async fn new_table(name: impl Into<String>, entries: Vec<String>) -> Result<Uuid, Error> {
-    let args = serde_wasm_bindgen::to_value(&NewTableArgs { name: name.into(), entries }).map_err_and_log(Error::SerdeWasmBindgenError)?;
+pub async fn new_table(use_cost: bool, name: impl Into<String>, entries: Vec<TableEntry>) -> Result<Uuid, Error> {
+    let args = serde_wasm_bindgen::to_value(&NewTableArgs { use_cost, name: name.into(), entries }).map_err_and_log(Error::SerdeWasmBindgenError)?;
     from_result(invoke("new_table", args).await)
 }
 
-pub fn new_table_with_callback(name: impl Into<String>, entries: Vec<String>, callback: impl Into<Callback<Uuid>>) {
-    wasm_bindgen_futures::spawn_local(emit_callback_if_ok(new_table(name.into(), entries), callback.into()));
+pub fn new_table_with_callback(use_cost: bool, name: impl Into<String>, entries: Vec<TableEntry>, callback: impl Into<Callback<Uuid>>) {
+    wasm_bindgen_futures::spawn_local(emit_callback_if_ok(new_table(use_cost, name.into(), entries), callback.into()));
 }
 
 #[derive(Debug, Clone, Copy, Serialize)]
@@ -77,15 +79,15 @@ pub fn change_table_name_with_callback(id: Uuid, name: impl Into<String>, callba
 #[derive(Debug, Clone, Serialize)]
 struct AddEntriesArgs {
     id: Uuid,
-    entries: Vec<String>
+    entries: Vec<TableEntry>
 }
 
-pub async fn add_entries(id: Uuid, entries: Vec<String>) -> Result<(), Error> {
+pub async fn add_entries(id: Uuid, entries: Vec<TableEntry>) -> Result<(), Error> {
     let args = serde_wasm_bindgen::to_value(&AddEntriesArgs { id, entries }).map_err_and_log(Error::SerdeWasmBindgenError)?;
     unit_from_result(invoke("add_entries", args).await)
 }
 
-pub fn add_entries_with_callback(id: Uuid, entries: Vec<String>, callback: impl Into<Callback<()>>) {
+pub fn add_entries_with_callback(id: Uuid, entries: Vec<TableEntry>, callback: impl Into<Callback<()>>) {
     wasm_bindgen_futures::spawn_local(emit_callback_if_ok(add_entries(id, entries), callback.into()));
 }
 
