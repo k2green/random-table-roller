@@ -1,10 +1,10 @@
 use std::path::PathBuf;
 
-use common_data::TableEntry;
+use common_data::{TableEntry, Currency};
 use web_sys::HtmlInputElement;
 use yew::prelude::*;
 
-use crate::{components::{menu::Menu, table_tabs::TableTabs, full_page_modal::FullPageModal, remove_button::RemoveButton}, hooks::prelude::*, glue::*};
+use crate::{components::{menu::Menu, table_tabs::TableTabs, full_page_modal::FullPageModal, remove_button::RemoveButton, currency_field::CurrencyField}, hooks::prelude::*, glue::*};
 
 fn save_table(is_menu_open: UseStateHandle<bool>, tables: UseTablesHandle) {
     let is_menu_open = is_menu_open.clone();
@@ -126,7 +126,16 @@ fn new_table_modal(props: &NewTableModalProps) -> Html {
     let NewTableModalProps { tables, is_open, is_menu_open } = props.clone();
     let table_name = use_state_eq(|| String::new());
     let entries = use_vec_state(|| Vec::<TableEntry>::new());
+    let use_cost = use_state_eq(|| false);
     let disable_add_button = table_name.trim().is_empty();
+
+    let update_use_cost = {
+        let use_cost = use_cost.clone();
+        Callback::from(move |e: Event| {
+            let target: HtmlInputElement = e.target_unchecked_into();
+            use_cost.set(target.checked());
+        })
+    };
 
     let add_table = {
         let is_open = is_open.clone();
@@ -198,9 +207,27 @@ fn new_table_modal(props: &NewTableModalProps) -> Html {
                 })
             };
 
+            let currency_changed = {
+                let entries = entries.clone();
+                Callback::from(move |c: Currency| {
+                    entries.update(move |current, old| {
+                        if current == index {
+                            let mut new = old.clone();
+                            new.set_cost(c);
+                            new
+                        } else {
+                            old.clone()
+                        }
+                    });
+                })
+            };
+
             html! {
                 <div class="flex-row">
                     <input class="flex-grow-1" value={entry.name().to_string()} onchange={update_entry} />
+                    if *use_cost {
+                        <CurrencyField on_change={currency_changed} />
+                    }
                     <RemoveButton on_click={remove_entry} />
                 </div>
             }
@@ -210,6 +237,10 @@ fn new_table_modal(props: &NewTableModalProps) -> Html {
     html! {
         <FullPageModal>
             <h3 class="heading">{"New Table"}</h3>
+            <div class="flex-row">
+                <p class="flex-grow-1">{"Use costs:"}</p>
+                <input type="checkbox" checked={*use_cost} onchange={update_use_cost} />
+            </div>
             <div class="flex-row">
                 <p>{"Table Name:"}</p>
                 <input class="flex-grow-1" value={(*table_name).clone()} onchange={update_name} />

@@ -1,11 +1,20 @@
 :root {
+  --text-colour: #f6f6f6;
+  --background-colour: #28006A;
+  --field-colour: #09001D;
+  --field-border-colour: black;
+  --field-highlight-colour: var(--area-light-colour);
+
+  --area-dark-colour: #0E002A;
+  --area-light-colour: #1B004A;
+  
   font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
   font-size: 16px;
   line-height: 24px;
   font-weight: 400;
 
-  color: #f6f6f6;
-  background-color: #28006A;
+  color: var(--text-colour);
+  background-color: var(--background-colour);
 
   padding: 0px;
   margin: 0px;
@@ -45,10 +54,10 @@ textarea {
   resize: none;
   width: var(--modal-width);
   height: 350px;
-  background-color: #09001D;
-  border: 1px solid black;
+  background-color: var(--field-colour);
+  border: 1px var(--field-border-colour);
   border-radius: 10px;
-  color: #f6f6f6;
+  color: var(--text-colour);
   font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
   margin-top: 5px;
 }
@@ -59,17 +68,33 @@ textarea.small {
 
 input {
   resize: none;
-  background-color: #09001D;
-  border: 1px solid black;
+  background-color: var(--field-colour);
+  border: 1px var(--field-border-colour);
   border-radius: 5px;
-  color: #f6f6f6;
+  color: var(--text-colour);
   font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
+  padding: 5px 0px 6px;
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type=number] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+  text-align: right;
+  padding-right: 8px;
+  width: 50px;
 }
 
 button {
   background-color: #CD6F07;
   border: 2px solid #E68F03;
-  color: #f6f6f6;
+  color: var(--text-colour);
   box-shadow: none;
   border-radius: 10px;
 }
@@ -86,14 +111,14 @@ button:disabled {
 }
 
 table {
-  border: 1px solid #0E002A;
-  background-color: #0E002A;
+  border: 1px solid var(--area-dark-colour);
+  background-color: var(--area-dark-colour);
   border-radius: 10px;
   padding: 3px;
 }
 
 table tbody {
-  background-color: #1B004A;
+  background-color: var(--area-light-colour);
 }
 
 table tbody p {
@@ -123,14 +148,14 @@ table td:nth-of-type(2) {
 
 button.blank {
   background-color: transparent;
-  color: #f6f6f6;
+  color: var(--text-colour);
   border: none;
   box-shadow: none;
 }
 
 button.table-button {
   background-color: transparent;
-  color: #f6f6f6;
+  color: var(--text-colour);
   border: none;
   box-shadow: none;
 }
@@ -163,8 +188,8 @@ table.blank tr > td:last-of-type {
 }
 
 .tab-button {
-  background-color: #1B004A;
-  color: #f6f6f6;
+  background-color: var(--area-light-colour);
+  color: var(--text-colour);
   border: none;
   box-shadow: none;
   margin: 10px 2px 3px;
@@ -176,7 +201,7 @@ table.blank tr > td:last-of-type {
 
 .tab-button-disabled {
   background-color: #070016;
-  color: #f6f6f6;
+  color: var(--text-colour);
   border: none;
   box-shadow: none;
   margin: 10px 2px 3px;
@@ -184,7 +209,7 @@ table.blank tr > td:last-of-type {
 
 .tab-button button,.tab-button-disabled button {
   background-color: transparent;
-  color: #f6f6f6;
+  color: var(--text-colour);
   border: none;
   box-shadow: none;
   white-space: nowrap;
@@ -198,11 +223,11 @@ table.blank tr > td:last-of-type {
 }
 
 svg.fill-colour {
-  fill: #f6f6f6;
+  fill: var(--text-colour);
 }
 
 svg.stroke-colour {
-  stroke: #f6f6f6;
+  stroke: var(--text-colour);
 }
 
 .no-scroll {
@@ -274,7 +299,7 @@ svg.stroke-colour {
 }
 
 .menu-content {
-  background-color: #28006A;
+  background-color: var(--background-colour);
   padding: 0px 15px;
 }
 
@@ -282,7 +307,7 @@ svg.stroke-colour {
   border: none;
   border-radius: 0px;
   background-color: transparent;
-  color: #f6f6f6;
+  color: var(--text-colour);
   text-align: left;
   width: 100%;
   margin: 3px 0px;
@@ -329,14 +354,14 @@ svg.stroke-colour {
   min-height: fit-content;
   max-height: 100vh;
   max-height: 100dvh;
-  background-color: #28006A;
+  background-color: var(--background-colour);
   border-radius: 20px;
   padding: 10px;
   overflow: none;
 }
 
 .modal-full {
-  background-color: #28006A;
+  background-color: var(--background-colour);
   width: 100vw;
   width: 100dvw;
   height: 100vh;
@@ -379,18 +404,77 @@ input.table-name {
   padding: 10px 0px;
 }
 
+.hor-margin {
+  margin: 0px 8px;
+}
+
 .table-style {
-  border: 1px solid #0E002A;
-  background-color: #0E002A;
+  border: 1px solid var(--area-dark-colour);
+  background-color: var(--area-dark-colour);
   border-radius: 10px;
   padding: 0px 3px;
 }
 
 .table-style .content {
-  background-color: #1B004A;
+  background-color: var(--area-light-colour);
   margin: 0px 5px 10px;
 }
 
 .table-style .content > * {
   margin: 2px 0px;
+}
+
+.select {
+  position: relative;
+  display: inline-block;
+  padding: 0px;
+  margin: 0px;
+}
+
+.select .content {
+  align-items: center;
+  background-color: var(--field-colour);
+  border: 1px solid var(--field-border-colour);
+  color: var(--text-colour);
+  border-radius: 5px;
+  margin: 0px;
+  padding: 0px 5px;
+  cursor: pointer;
+}
+
+.select .content p {
+  margin: 0px;
+  padding: 0px;
+}
+
+.select .content svg {
+  margin: 0px;
+  padding: 0px;
+}
+
+.select .content:focus {
+  border: 1px solid white;
+}
+
+.select p {
+  -webkit-user-select: none; 
+  -ms-user-select: none; 
+  user-select: none;
+}
+
+.select-dropdown {
+  background-color: var(--field-colour);
+  border: 1px solid var(--field-border-colour);
+  color: var(--text-colour);
+  position: absolute;
+  left: 0px;
+  width: 100%;
+}
+
+.select-dropdown > div {
+  cursor: pointer;
+}
+
+.select-dropdown > div:hover {
+  background-color: var(--field-highlight-colour);
 }
