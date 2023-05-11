@@ -54,6 +54,7 @@ impl RollResult {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TableEntry {
+    weight: usize,
     name: String,
     cost: Currency
 }
@@ -73,9 +74,26 @@ impl Ord for TableEntry {
 impl TableEntry {
     pub fn new(cost: Currency) -> Self {
         Self {
+            weight: 1,
             name: String::new(),
             cost
         }
+    }
+
+    pub fn with_weight(weight: usize, cost: Currency) -> Self {
+        Self {
+            name: String::new(),
+            weight,
+            cost
+        }
+    }
+
+    pub fn weight(&self) -> usize {
+        self.weight
+    }
+
+    pub fn set_weight(&mut self, weight: usize) {
+        self.weight = weight;
     }
 
     pub fn name(&self) -> &str {
@@ -211,6 +229,10 @@ impl TableData {
         }
     }
 
+    pub fn total_weight(&self) -> usize {
+        self.entries.iter().map(|e| e.weight).sum()
+    }
+
     pub fn total_cost(&self) -> Currency {
         self.entries.iter().map(|e| e.cost()).sum()
     }
@@ -284,18 +306,28 @@ impl TableData {
         Ok(&self.entries[rng.gen_range(0..self.len())])
     }
 
-    pub fn get_random_set_by_count(&self, count: usize, allow_duplicates: bool) -> Result<Vec<RollResult>, getrandom::Error> {
+    fn get_allowed_indexes<F: Fn(usize, &TableEntry) -> bool>(&self, use_weights: bool, filter: F) -> Vec<usize> {
+        let mut indeces = Vec::new();
+
+        for (index, entry) in self.entries.iter().enumerate() {
+            if filter(index, entry) {
+                let count = if use_weights { entry.weight } else { 1 };
+                for _ in 0..count {
+                    indeces.push(index);
+                }
+            }
+        }
+
+        indeces
+    }
+
+    pub fn get_random_set_by_count(&self, use_weights: bool, count: usize, allow_duplicates: bool) -> Result<Vec<RollResult>, getrandom::Error> {
         let mut rng = create_rng()?;
         let mut rolls: HashMap<usize, usize> = HashMap::new();
 
         for _ in 0..count {
-            let mut roll = rng.gen_range(0..self.len());
-
-            if !allow_duplicates {
-                while rolls.contains_key(&roll) {
-                    roll = rng.gen_range(0..self.len());
-                }
-            }
+            let allowed = self.get_allowed_indexes(use_weights, |i, _| allow_duplicates || !rolls.contains_key(&i));
+            let roll = allowed[rng.gen_range(0..allowed.len())];
 
             match rolls.get_mut(&roll) {
                 Some(rolls) => *rolls += 1,
@@ -315,24 +347,17 @@ impl TableData {
         Ok(output)
     }
 
-    pub fn get_random_set_by_cost(&self, cost: Currency, allow_duplicates: bool) -> Result<Vec<RollResult>, getrandom::Error> {
+    pub fn get_random_set_by_cost(&self, use_weights: bool, cost: Currency, allow_duplicates: bool) -> Result<Vec<RollResult>, getrandom::Error> {
         let mut remaining = cost;
         let mut rng = create_rng()?;
         let mut rolls: HashMap<usize, usize> = HashMap::new();
 
         while self.entries.iter().any(|entry| entry.cost() <= remaining) {
-            let allowed = self.entries.iter()
-                .enumerate()
-                .filter_map(|(index, entry)| if entry.cost() <= remaining { Some(index) } else { None })
-                .collect::<Vec<_>>();
+            let allowed =  self.get_allowed_indexes(use_weights, |i, e| {
+                e.cost() <= remaining && (allow_duplicates || !rolls.contains_key(&i))
+            });
 
-            let mut roll = allowed[rng.gen_range(0..allowed.len())];
-
-            if !allow_duplicates {
-                while rolls.contains_key(&roll) {
-                    roll = allowed[rng.gen_range(0..allowed.len())];
-                }
-            }
+            let roll = allowed[rng.gen_range(0..allowed.len())];
 
             remaining -= self.entries[roll].cost();
 

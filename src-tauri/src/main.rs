@@ -186,8 +186,8 @@ fn get_random_set(state: State<AppState>, id: Uuid, limit: RollLimit, allow_dupl
 
     let data = table.get_data()?;
     let entries = match limit {
-        RollLimit::Count(count) => log_result(data.get_random_set_by_count(count, allow_duplicates).map_err(|e| BackendError::from(e)))?,
-        RollLimit::Cost(cost) => log_result(data.get_random_set_by_cost(cost, allow_duplicates).map_err(|e| BackendError::from(e)))?,
+        RollLimit::Count(count) => log_result(data.get_random_set_by_count(false, count, allow_duplicates).map_err(|e| BackendError::from(e)))?,
+        RollLimit::Cost(cost) => log_result(data.get_random_set_by_cost(false, cost, allow_duplicates).map_err(|e| BackendError::from(e)))?,
     };
 
     log::info!("Random rolls: {:?}", &entries);
