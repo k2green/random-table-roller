@@ -16,11 +16,11 @@ pub(crate) async fn emit_callback_if_ok<T, E: std::fmt::Display, F: Future<Outpu
     }
 }
 
-pub(crate) fn try_parse_number(s: &str) -> Option<usize> {
+pub(crate) fn try_parse<T, E, F: Fn(&str) -> Result<T, E>>(s: &str, parse: F) -> Option<T> {
     let pattern = Regex::new(r"^[ \n\r\t]*(\d+)[ \n\r\t]*$").ok()?;
     let captures = pattern.captures(s)?;
     let capture = captures.get(1)?.as_str();
-    usize::from_str_radix(capture, 10).ok()
+    parse(capture).ok()
 }
 
 #[derive(Debug)]

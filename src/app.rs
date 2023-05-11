@@ -151,6 +151,7 @@ fn new_table_modal(props: &NewTableModalProps) -> Html {
             let entries = (*entries).clone();
 
             if !name.is_empty() {
+                log::info!("Entries: {:?}", &entries);
                 new_table_with_callback(*use_cost, name.to_string(), entries, move |_| {
                     tables.update();
                     is_open.set(false);
@@ -179,7 +180,7 @@ fn new_table_modal(props: &NewTableModalProps) -> Html {
     let insert_new = {
         let entries = entries.clone();
         Callback::from(move |_: MouseEvent| {
-            entries.insert(TableEntry::new());
+            entries.insert(TableEntry::new(Currency::Copper(1)));
         })
     };
 

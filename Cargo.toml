@@ -24,6 +24,7 @@ yew_icons = { version = "0.7.2", features = [
     "BootstrapCaretUpFill"
 ]}
 regex = "1.8.1"
+base64 = "0.21.0"
 
 [workspace]
 members = [

@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
-use common_data::{TableData, RollResult, TableEntry, Currency};
+use common_data::{TableData, RollResult, TableEntry, Currency, RollType};
 use uuid::Uuid;
 use web_sys::HtmlInputElement;
 use yew::prelude::*;
 
-use crate::{hooks::prelude::{UseTablesHandle, use_vec_state}, glue::*, components::{modal::Modal, editable_header::EditableHeader, remove_button::RemoveButton, full_page_modal::FullPageModal, currency_field::CurrencyField}, try_parse_number};
+use crate::{hooks::prelude::{UseTablesHandle, use_vec_state}, glue::*, components::{editable_header::EditableHeader, remove_button::RemoveButton, full_page_modal::FullPageModal, currency_field::CurrencyField, roll_modals::{RollTypeSelectionModal, RollByCountModal, RollByCostModal, RollResultsModal}}};
 
 #[derive(Debug, Clone, PartialEq, Properties)]
 pub struct TableTabsProps {
@@ -142,8 +142,6 @@ fn tab_content(props: &TabContentProps) -> Html {
     let TabContentProps { tables, table } = props.clone();
     let is_add_entry_modal_open = use_state_eq(|| false);
     let is_roll_modal_open = use_state_eq(|| false);
-    let is_roll_result_modal_open = use_state_eq(|| false);
-    let roll_results = use_state_eq(|| Vec::<RollResult>::new());
     let id = table.id();
 
     let open_entries_modal = {
@@ -183,10 +181,7 @@ fn tab_content(props: &TabContentProps) -> Html {
                 <AddEntryModal tables={tables.clone()} is_open={is_add_entry_modal_open} id={table.id()} />
             }
             if *is_roll_modal_open {
-                <RandomRollModal is_open={is_roll_modal_open} is_results_open={is_roll_result_modal_open.clone()} results={roll_results.clone()} table={table.clone()} id={table.id()} />
-            }
-            if *is_roll_result_modal_open {
-                <RollResults is_open={is_roll_result_modal_open} results={roll_results} />
+                <RandomRollModal table={table.clone()} use_cost={table.use_cost()} is_open={is_roll_modal_open} />
             }
             <div class="flex-column flex-grow-1">
                 <EditableHeader text={table.name().to_string()} callback={set_name} />
@@ -213,148 +208,58 @@ fn tab_content(props: &TabContentProps) -> Html {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Properties)]
-struct RollResultsProps {
-    is_open: UseStateHandle<bool>,
-    results: UseStateHandle<Vec<RollResult>>,
-}
-
-#[function_component(RollResults)]
-fn roll_results_modal(props: &RollResultsProps) -> Html {
-    let RollResultsProps { is_open, results } = props.clone();
-
-    let close = {
-        let is_open = is_open.clone();
-        Callback::from(move |_: MouseEvent| {
-            is_open.set(false);
-        })
-    };
-
-    let entries = results.iter()
-        .map(|res| html! {
-            <tr>
-                <td class="align-right"><p>{format!("{}x", res.count())}</p></td>
-                <td><p>{res.entry().name()}</p></td>
-            </tr>
-        })
-        .collect::<Html>();
-
-    html! {
-        <Modal>
-            <h3 class="heading">{"Results"}</h3>
-            <div class="scroll flex-grow-1">
-                <table class="stretch-width blank">
-                    {entries}
-                </table>
-            </div>
-            <div class="flex-row button-row">
-                <button class="flex-grow-1" onclick={close}>{"Ok"}</button>
-            </div>
-        </Modal>
-    }
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum RollModal {
+    SelectMode,
+    RollByCount,
+    RollByCost,
+    Results
 }
 
 #[derive(Debug, Clone, PartialEq, Properties)]
 struct RandomRollModalProps {
-    is_open: UseStateHandle<bool>,
-    is_results_open: UseStateHandle<bool>,
-    results: UseStateHandle<Vec<RollResult>>,
     table: Arc<TableData>,
-    id: Uuid
+    use_cost: bool,
+    is_open: UseStateHandle<bool>
 }
 
 #[function_component(RandomRollModal)]
 fn random_roll_modal(props: &RandomRollModalProps) -> Html {
-    let RandomRollModalProps {
-        is_open,
-        is_results_open,
-        results,
-        table,
-        id
-    } = props.clone();
+    let RandomRollModalProps { table, use_cost, is_open } = props.clone();
+    let current_modal = use_state_eq(|| if use_cost { RollModal::SelectMode } else { RollModal::RollByCount });
+    let results = use_state_eq(|| Arc::new(Vec::<RollResult>::new()));
 
-    let allow_duplicates = use_state_eq(|| true);
-    let random_roll_count = use_state_eq(|| 1_usize);
-
-    let make_rolls = {
-        let is_open = is_open.clone();
-        let is_results_open = is_results_open.clone();
-        let results = results.clone();
-        let random_roll_count = random_roll_count.clone();
-        let allow_duplicates = allow_duplicates.clone();
-        
-        Callback::from(move |_: MouseEvent| {
-            let is_open = is_open.clone();
-            let is_results_open = is_results_open.clone();
-            let results = results.clone();
-            get_random_set_with_callback(id, *random_roll_count, *allow_duplicates, move |res| {
-                is_open.set(false);
-                is_results_open.set(true);
-                results.set(res);
+    let select_roll_type = {
+        let current_modal = current_modal.clone();
+        Callback::from(move |rt: RollType| {
+            current_modal.set(match rt {
+                RollType::Count => RollModal::RollByCount,
+                RollType::Cost => RollModal::RollByCost,
             });
         })
     };
 
-    let update_allow_duplicates = {
-        let random_roll_count = random_roll_count.clone();
-        let allow_duplicates = allow_duplicates.clone();
-        let table = table.clone();
-
-        Callback::from(move |e: Event| {
-            let target: HtmlInputElement = e.target_unchecked_into();
-            allow_duplicates.set(target.checked());
-
-            if !target.checked() {
-                random_roll_count.set((*random_roll_count).min(table.len()));
-            }
-        })
-    };
-
-    let update_count = {
-        let random_roll_count = random_roll_count.clone();
-        let allow_duplicates = allow_duplicates.clone();
-        let table = table.clone();
-
-        Callback::from(move |e: Event| {
-            let target: HtmlInputElement = e.target_unchecked_into();
-            let target_value = target.value();
-            if let Some(parsed) = try_parse_number(&target_value) {
-                let mut new_value = parsed.max(1);
-
-                if !*allow_duplicates {
-                    new_value = new_value.min(table.len());
-                }
-
-                random_roll_count.set(new_value);
-            }
-        })
-    };
-
-    let cancel = {
+    let close_modal = {
         let is_open = is_open.clone();
         Callback::from(move |_: MouseEvent| {
             is_open.set(false);
         })
     };
 
-    html! {
-        <Modal>
-            <h3 class="heading">{"Add entries"}</h3>
-            <table class="stretch-width blank">
-                <tr>
-                    <td><p>{"Number of rolls:"}</p></td>
-                    <td><input class="align-right" value={random_roll_count.to_string()} onchange={update_count} /></td>
-                </tr>
-                <tr>
-                    <td><p>{"Allow duplicates:"}</p></td>
-                    <td><input type="checkbox" checked={*allow_duplicates} onchange={update_allow_duplicates} /></td>
-                </tr>
-            </table>
-            <div class="flex-row button-row">
-                <button class="flex-grow-1" onclick={make_rolls}>{"Roll"}</button>
-                <button class="flex-grow-1" onclick={cancel}>{"Cancel"}</button>
-            </div>
-        </Modal>
+    let complete = {
+        let results = results.clone();
+        let current_modal = current_modal.clone();
+        Callback::from(move |res: Vec<RollResult>| {
+            results.set(Arc::new(res));
+            current_modal.set(RollModal::Results);
+        })
+    };
+
+    match &*current_modal {
+        RollModal::SelectMode => html! { <RollTypeSelectionModal on_select={select_roll_type} on_cancel={close_modal.clone()} /> },
+        RollModal::RollByCount => html! { <RollByCountModal table_id={table.id()} max_count={table.len()} on_complete={complete} on_cancel={close_modal} /> },
+        RollModal::RollByCost => html! { <RollByCostModal table_id={table.id()} max_cost={table.total_cost()} on_complete={complete} on_cancel={close_modal} /> },
+        RollModal::Results => html! { <RollResultsModal show_cost={use_cost} results={(*results).clone()} on_close={close_modal} /> },
     }
 }
 
@@ -397,7 +302,7 @@ fn add_entry_modal(props: &AddEntryModalProps) -> Html {
     let insert_new = {
         let entries = entries.clone();
         Callback::from(move |_: MouseEvent| {
-            entries.insert(TableEntry::new());
+            entries.insert(TableEntry::new(Currency::Copper(1)));
         })
     };
 
