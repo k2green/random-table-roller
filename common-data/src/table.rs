@@ -148,15 +148,15 @@ impl<'de> Deserialize<'de> for Table {
 }
 
 impl Table {
-    pub fn new(use_cost: bool, name: impl Into<String>, order: usize) -> (Uuid, Self) {
-        let table = TableData::new(use_cost, name, order);
+    pub fn new(use_cost: bool, use_weight: bool, name: impl Into<String>, order: usize) -> (Uuid, Self) {
+        let table = TableData::new(use_cost, use_weight, name, order);
         let id = table.id();
 
         (id, Self { data: Arc::new(Mutex::new(table)) })
     }
 
-    pub fn with_capacity(use_cost: bool, name: impl Into<String>, capacity: usize, order: usize) -> (Uuid, Self) {
-        let table = TableData::with_capacity(use_cost, name, capacity, order);
+    pub fn with_capacity(use_cost: bool, use_weight: bool, name: impl Into<String>, capacity: usize, order: usize) -> (Uuid, Self) {
+        let table = TableData::with_capacity(use_cost, use_weight, name, capacity, order);
         let id = table.id();
 
         (id, Self { data: Arc::new(Mutex::new(table)) })
@@ -170,6 +170,7 @@ impl Table {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct FileTableData {
     use_cost: bool,
+    use_weight: bool,
     name: String,
     entries: Vec<TableEntry>,
 }
@@ -177,6 +178,7 @@ pub struct FileTableData {
 impl FileTableData {
     pub fn into_table_data(self, order: usize, path: Option<PathBuf>) -> TableData {
         TableData {
+            use_weight: self.use_weight,
             use_cost: self.use_cost,
             id: Uuid::new_v4(),
             order,
@@ -190,6 +192,7 @@ impl FileTableData {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TableData {
     use_cost: bool,
+    use_weight: bool,
     id: Uuid,
     #[serde(skip)]
     order: usize,
@@ -199,9 +202,10 @@ pub struct TableData {
 }
 
 impl TableData {
-    pub fn new(use_cost: bool, name: impl Into<String>, order: usize) -> TableData {
+    pub fn new(use_cost: bool, use_weight: bool, name: impl Into<String>, order: usize) -> TableData {
         Self {
             use_cost,
+            use_weight,
             order,
             id: Uuid::new_v4(),
             name: name.into(),
@@ -210,9 +214,10 @@ impl TableData {
         }
     }
 
-    pub fn with_capacity(use_cost: bool, name: impl Into<String>, capacity: usize, order: usize) -> TableData {
+    pub fn with_capacity(use_cost: bool, use_weight: bool, name: impl Into<String>, capacity: usize, order: usize) -> TableData {
         Self {
             use_cost,
+            use_weight,
             order,
             id: Uuid::new_v4(),
             name: name.into(),
@@ -223,6 +228,7 @@ impl TableData {
 
     pub fn to_file_data(&self) -> FileTableData {
         FileTableData {
+            use_weight: self.use_weight,
             use_cost: self.use_cost,
             name: self.name.clone(),
             entries: self.entries.clone()

@@ -84,7 +84,7 @@ fn new_table(state: State<AppState>, use_cost: bool, name: String, entries: Vec<
     log::info!("Adding new table with name '{}'...", &name);
     let mut tables = log_result(state.lock_tables())?;
 
-    let mut table_data = TableData::new(use_cost, name, tables.len());
+    let mut table_data = TableData::new(use_cost, false, name, tables.len());
     let id = table_data.id();
 
     for mut entry in entries {
