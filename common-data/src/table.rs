@@ -6,6 +6,36 @@ use uuid::Uuid;
 
 use crate::{Currency, BackendError};
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum RollType {
+    Cost,
+    Count
+}
+
+impl RollType {
+    pub fn get_values() -> Vec<Self> {
+        vec! [
+            Self::Cost,
+            Self::Count
+        ]
+    }
+}
+
+impl std::fmt::Display for RollType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Cost => write!(f, "Cost"),
+            Self::Count => write!(f, "Count"),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum RollLimit {
+    Count(usize),
+    Cost(Currency)
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RollResult {
     count: usize,
@@ -41,10 +71,10 @@ impl Ord for TableEntry {
 }
 
 impl TableEntry {
-    pub fn new() -> Self {
+    pub fn new(cost: Currency) -> Self {
         Self {
             name: String::new(),
-            cost: Currency::default()
+            cost
         }
     }
 
@@ -58,6 +88,10 @@ impl TableEntry {
 
     pub fn cost(&self) -> Currency {
         self.cost
+    }
+
+    pub fn cost_mut(&mut self) -> &mut Currency {
+        &mut self.cost
     }
 
     pub fn set_cost(&mut self, cost: Currency) {
@@ -177,6 +211,10 @@ impl TableData {
         }
     }
 
+    pub fn total_cost(&self) -> Currency {
+        self.entries.iter().map(|e| e.cost()).sum()
+    }
+
     pub fn sort(&mut self) {
         self.entries.sort();
     }
@@ -246,7 +284,7 @@ impl TableData {
         Ok(&self.entries[rng.gen_range(0..self.len())])
     }
 
-    pub fn get_random_set(&self, count: usize, allow_duplicates: bool) -> Result<Vec<RollResult>, getrandom::Error> {
+    pub fn get_random_set_by_count(&self, count: usize, allow_duplicates: bool) -> Result<Vec<RollResult>, getrandom::Error> {
         let mut rng = create_rng()?;
         let mut rolls: HashMap<usize, usize> = HashMap::new();
 
@@ -258,6 +296,45 @@ impl TableData {
                     roll = rng.gen_range(0..self.len());
                 }
             }
+
+            match rolls.get_mut(&roll) {
+                Some(rolls) => *rolls += 1,
+                None => { rolls.insert(roll, 1); }
+            };
+        }
+
+        let mut output = rolls.into_iter()
+            .map(|(roll, count)| RollResult {
+                count,
+                entry: self.entries[roll].clone()
+            })
+            .collect::<Vec<_>>();
+
+        output.sort_by(|a, b| a.entry().cmp(&b.entry()));
+
+        Ok(output)
+    }
+
+    pub fn get_random_set_by_cost(&self, cost: Currency, allow_duplicates: bool) -> Result<Vec<RollResult>, getrandom::Error> {
+        let mut remaining = cost;
+        let mut rng = create_rng()?;
+        let mut rolls: HashMap<usize, usize> = HashMap::new();
+
+        while self.entries.iter().any(|entry| entry.cost() <= remaining) {
+            let allowed = self.entries.iter()
+                .enumerate()
+                .filter_map(|(index, entry)| if entry.cost() <= remaining { Some(index) } else { None })
+                .collect::<Vec<_>>();
+
+            let mut roll = allowed[rng.gen_range(0..allowed.len())];
+
+            if !allow_duplicates {
+                while rolls.contains_key(&roll) {
+                    roll = allowed[rng.gen_range(0..allowed.len())];
+                }
+            }
+
+            remaining -= self.entries[roll].cost();
 
             match rolls.get_mut(&roll) {
                 Some(rolls) => *rolls += 1,

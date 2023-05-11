@@ -5,7 +5,7 @@ pub mod logging;
 
 use std::{collections::HashMap, sync::{Mutex, MutexGuard}, cmp::Ordering, path::PathBuf, fs::{self, File}};
 
-use common_data::{BackendError, Table, IdNamePair, TableData, RollResult, FileTableData, TableEntry};
+use common_data::{BackendError, Table, IdNamePair, TableData, RollResult, FileTableData, TableEntry, RollLimit};
 use log::SetLoggerError;
 use logging::{setup_logging, cleanup_logs};
 use tauri::{State, Manager};
@@ -90,6 +90,10 @@ fn new_table(state: State<AppState>, use_cost: bool, name: String, entries: Vec<
     for mut entry in entries {
         let trimmed = entry.name().trim().to_string();
         entry.set_name(&trimmed);
+        
+        if entry.cost().amount() == 0 {
+            entry.set_cost(entry.cost().with_amount(1));
+        }
 
         if !trimmed.is_empty() {
             table_data.push(entry);
@@ -133,6 +137,10 @@ fn add_entries(state: State<AppState>, id: Uuid, entries: Vec<TableEntry>) -> Re
         let trimmed = entry.name().trim().to_string();
         entry.set_name(&trimmed);
 
+        if entry.cost().amount() == 0 {
+            entry.set_cost(entry.cost().with_amount(1));
+        }
+
         if !trimmed.is_empty() {
             data.push(entry);
         }
@@ -170,18 +178,21 @@ fn get_random(state: State<AppState>, id: Uuid) -> Result<TableEntry, BackendErr
 }
 
 #[tauri::command]
-fn get_random_set(state: State<AppState>, id: Uuid, count: usize, allow_duplicates: bool) -> Result<Vec<RollResult>, BackendError> {
-    log::info!("Getting {} random entries from table with id '{}'...", count, id);
+fn get_random_set(state: State<AppState>, id: Uuid, limit: RollLimit, allow_duplicates: bool) -> Result<Vec<RollResult>, BackendError> {
+    log::info!("Getting '{:?}' random entries from table with id '{}'...", limit, id);
     let tables = log_result(state.lock_tables())?;
     let table = log_result(tables.get(&id)
         .ok_or(BackendError::argument_error("id", format!("Could not find table with id '{}'", id))))?;
 
     let data = table.get_data()?;
-    let entry = log_result(data.get_random_set(count, allow_duplicates).map_err(|e| BackendError::from(e)))?;
+    let entries = match limit {
+        RollLimit::Count(count) => log_result(data.get_random_set_by_count(count, allow_duplicates).map_err(|e| BackendError::from(e)))?,
+        RollLimit::Cost(cost) => log_result(data.get_random_set_by_cost(cost, allow_duplicates).map_err(|e| BackendError::from(e)))?,
+    };
 
-    log::info!("Random rolls: {:?}", &entry);
+    log::info!("Random rolls: {:?}", &entries);
 
-    Ok(entry)
+    Ok(entries)
 }
 
 #[tauri::command]

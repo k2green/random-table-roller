@@ -17,9 +17,29 @@ pub struct SelectProps<T: Clone + PartialEq + Display + 'static> {
 #[function_component(Select)]
 pub fn select<T: Clone + PartialEq + Display + 'static>(props: &SelectProps<T>) -> Html {
     let SelectProps { parent_class, select_class, items, on_change } = props.clone();
-    let selected_index = use_state_eq(|| 0_usize);
+    let selected_item = use_state_eq(|| items[0].clone());
+    
+    html! {
+        <SelectDirect<T> items={items} selected_item={selected_item} parent_class={parent_class} select_class={select_class} on_change={on_change} />
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Properties)]
+pub struct SelectDirectProps<T: Clone + PartialEq + Display + 'static> {
+    pub selected_item: UseStateHandle<T>,
+    pub items: Arc<Vec<T>>,
+    #[prop_or_default]
+    pub parent_class: Classes,
+    #[prop_or_default]
+    pub select_class: Classes,
+    #[prop_or_default]
+    pub on_change: Callback<T>
+}
+
+#[function_component(SelectDirect)]
+pub fn select_direct<T: Clone + PartialEq + Display + 'static>(props: &SelectDirectProps<T>) -> Html {
+    let SelectDirectProps { selected_item, parent_class, select_class, items, on_change } = props.clone();
     let is_focused = use_state_eq(|| false);
-    let selected_item = &items[*selected_index];
     let icon_id = if *is_focused { IconId::BootstrapCaretUpFill } else { IconId::BootstrapCaretDownFill };
 
     let set_focused = {
@@ -44,13 +64,14 @@ pub fn select<T: Clone + PartialEq + Display + 'static>(props: &SelectProps<T>) 
             let set_selected = {
                 let on_change = on_change.clone();
                 let items = items.clone();
-                let selected_index = selected_index.clone();
+                let selected_item = selected_item.clone();
                 let is_focused = is_focused.clone();
 
                 Callback::from(move |_: MouseEvent| {
-                    selected_index.set(index);
+                    let item = &items[index];
+                    selected_item.set(item.clone());
                     is_focused.set(false);
-                    on_change.emit(items[index].clone())
+                    on_change.emit(item.clone())
                 })
             };
 

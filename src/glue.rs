@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use common_data::{IdNamePair, TableData, RollResult, TableEntry};
+use common_data::{IdNamePair, TableData, RollResult, TableEntry, RollLimit};
 use serde::Serialize;
 use uuid::Uuid;
 use wasm_bindgen::prelude::*;
@@ -40,7 +40,11 @@ struct NewTableArgs {
 
 pub async fn new_table(use_cost: bool, name: impl Into<String>, entries: Vec<TableEntry>) -> Result<Uuid, Error> {
     let args = serde_wasm_bindgen::to_value(&NewTableArgs { use_cost, name: name.into(), entries }).map_err_and_log(Error::SerdeWasmBindgenError)?;
-    from_result(invoke("new_table", args).await)
+    let res = invoke("new_table", args).await;
+
+    log::info!("Result: {:?}", &res);
+
+    from_result(res)
 }
 
 pub fn new_table_with_callback(use_cost: bool, name: impl Into<String>, entries: Vec<TableEntry>, callback: impl Into<Callback<Uuid>>) {
@@ -123,18 +127,18 @@ pub fn get_random_with_callback(id: Uuid, callback: impl Into<Callback<String>>)
 #[derive(Debug, Clone, Serialize)]
 struct GetRandomSetArgs {
     id: Uuid,
-    count: usize,
+    limit: RollLimit,
     #[serde(rename = "allowDuplicates")]
     allow_duplicates: bool
 }
 
-pub async fn get_random_set(id: Uuid, count: usize, allow_duplicates: bool) -> Result<Vec<RollResult>, Error> {
-    let args = serde_wasm_bindgen::to_value(&GetRandomSetArgs { id, count, allow_duplicates }).map_err_and_log(Error::SerdeWasmBindgenError)?;
+pub async fn get_random_set(id: Uuid, limit: RollLimit, allow_duplicates: bool) -> Result<Vec<RollResult>, Error> {
+    let args = serde_wasm_bindgen::to_value(&GetRandomSetArgs { id, limit, allow_duplicates }).map_err_and_log(Error::SerdeWasmBindgenError)?;
     from_result(invoke("get_random_set", args).await)
 }
 
-pub fn get_random_set_with_callback(id: Uuid, count: usize, allow_duplicates: bool, callback: impl Into<Callback<Vec<RollResult>>>) {
-    wasm_bindgen_futures::spawn_local(emit_callback_if_ok(get_random_set(id, count, allow_duplicates), callback.into()));
+pub fn get_random_set_with_callback(id: Uuid, limit: RollLimit, allow_duplicates: bool, callback: impl Into<Callback<Vec<RollResult>>>) {
+    wasm_bindgen_futures::spawn_local(emit_callback_if_ok(get_random_set(id, limit, allow_duplicates), callback.into()));
 }
 
 #[derive(Debug, Clone, Serialize)]
