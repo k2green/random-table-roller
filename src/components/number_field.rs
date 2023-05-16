@@ -51,6 +51,8 @@ pub struct NumberFieldProps<T: Number> {
     #[prop_or_default]
     pub get_default: Option<Callback<(), T>>,
     #[prop_or_default]
+    pub title: AttrValue,
+    #[prop_or_default]
     pub class: Classes,
     #[prop_or_default]
     pub on_change: Callback<T>
@@ -58,13 +60,13 @@ pub struct NumberFieldProps<T: Number> {
 
 #[function_component(NumberField)]
 pub fn number_field<T: Number>(props: &NumberFieldProps<T>) -> Html {
-    let NumberFieldProps { value, validate, get_default, class, on_change } = props.clone();
+    let NumberFieldProps { value, validate, get_default, title, class, on_change } = props.clone();
     
     let on_input = validate_callback::<InputEvent, _>(value, validate.clone(), get_default.clone(), None);
     let on_change = validate_callback::<Event, _>(value, validate.clone(), get_default.clone(), Some(on_change));
 
     html! {
-        <input class={class} value={value.to_string()} oninput={on_input} onchange={on_change} />
+        <input title={title} class={class} value={value.to_string()} oninput={on_input} onchange={on_change} />
     }
 }
 

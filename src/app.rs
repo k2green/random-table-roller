@@ -256,10 +256,10 @@ fn new_table_modal(props: &NewTableModalProps) -> Html {
                 <div class="flex-row">
                     <input class="flex-grow-1" value={entry.name().to_string()} onchange={update_entry} />
                     if *use_weight {
-                        <NumberField<usize> class="number" value={entry.weight()} validate={validate_weight} on_change={set_weight} />
+                        <NumberField<usize> title="Weight" class="number" value={entry.weight()} validate={validate_weight} on_change={set_weight} />
                     }
                     if *use_cost {
-                        <CurrencyField on_change={currency_changed} />
+                        <CurrencyField title="Cost" on_change={currency_changed} />
                     }
                     <RemoveButton on_click={remove_entry} />
                 </div>
@@ -270,20 +270,22 @@ fn new_table_modal(props: &NewTableModalProps) -> Html {
     html! {
         <FullPageModal>
             <h3 class="heading">{"New Table"}</h3>
-            <div class="flex-row">
-                <p class="flex-grow-1">{"Use costs:"}</p>
-                <input type="checkbox" checked={*use_cost} onchange={update_use_cost} />
-            </div>
-            <div class="flex-row">
-                <p class="flex-grow-1">{"Use weights:"}</p>
-                <input type="checkbox" checked={*use_weight} onchange={update_use_weight} />
-            </div>
-            <div class="flex-row">
-                <p>{"Table Name:"}</p>
-                <input class="flex-grow-1" value={(*table_name).clone()} onchange={update_name} />
-            </div>
-            <p class="vert-margin">{"Below you can add the initial entries in the table. Multiple entries can be added by splitting them into multiple lines."}</p>
-            <div class="flex-column flex-grow-1 table-style">
+            <table class="stretch-width settings">
+                <tr>
+                    <td><p>{"Table Name:"}</p></td>
+                    <td><input class="flex-grow-1" value={(*table_name).clone()} onchange={update_name} /></td>
+                </tr>
+                <tr>
+                    <td><p class="flex-grow-1">{"Use costs:"}</p></td>
+                    <td><input type="checkbox" checked={*use_cost} onchange={update_use_cost} /></td>
+                </tr>
+                <tr>
+                    <td><p class="flex-grow-1">{"Use weights:"}</p></td>
+                    <td><input type="checkbox" checked={*use_weight} onchange={update_use_weight} /></td>
+                </tr>
+            </table>
+            <p class="vert-margin">{"Below you can add the initial entries in the table. Use the '+' button to add an entry and then use the fields to edit it."}</p>
+            <div class="flex-column flex-grow-1 table-style vert-margin">
                 <h2>{"Table entries"}</h2>
                 <div class="flex-column content">
                 {entry_items}

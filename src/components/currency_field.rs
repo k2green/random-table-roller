@@ -72,6 +72,8 @@ fn get_currency(amount: u128, currency_type: CurrencyType) -> Currency {
 #[derive(Debug, Clone, PartialEq, Properties)]
 pub struct CurrencyFieldProps {
     #[prop_or_default]
+    pub title: AttrValue,
+    #[prop_or_default]
     pub container_class: Classes,
     #[prop_or_default]
     pub on_change: Callback<Currency>
@@ -79,12 +81,12 @@ pub struct CurrencyFieldProps {
 
 #[function_component(CurrencyField)]
 pub fn currency_field(props: &CurrencyFieldProps) -> Html {
-    let CurrencyFieldProps { container_class, on_change } = props.clone();
+    let CurrencyFieldProps { title, container_class, on_change } = props.clone();
     let amount = use_state_eq(|| 1_u128);
     let currency_type = use_state_eq(|| CurrencyType::Copper);
 
     html! {
-        <CurrencyFieldDirect amount={amount} currency_type={currency_type} container_class={container_class} on_change={on_change} />
+        <CurrencyFieldDirect title={title} amount={amount} currency_type={currency_type} container_class={container_class} on_change={on_change} />
     }
 }
 
@@ -93,6 +95,8 @@ pub struct CurrencyFieldDirectProps {
     pub amount: UseStateHandle<u128>,
     pub currency_type: UseStateHandle<CurrencyType>,
     #[prop_or_default]
+    pub title: AttrValue,
+    #[prop_or_default]
     pub container_class: Classes,
     #[prop_or_default]
     pub on_change: Callback<Currency>
@@ -100,7 +104,7 @@ pub struct CurrencyFieldDirectProps {
 
 #[function_component(CurrencyFieldDirect)]
 pub fn currency_field(props: &CurrencyFieldDirectProps) -> Html {
-    let CurrencyFieldDirectProps { amount, currency_type, container_class, on_change } = props.clone();
+    let CurrencyFieldDirectProps { amount, currency_type, title, container_class, on_change } = props.clone();
 
     let update_amount = {
         let amount = amount.clone();
@@ -138,7 +142,7 @@ pub fn currency_field(props: &CurrencyFieldDirectProps) -> Html {
 
     html! {
         <div class={classes!(container_class, "flex-row")}>
-            <NumberField<u128> class="number" value={*amount} get_default={|_: ()| 1_u128} validate={validate} on_change={update_amount} />
+            <NumberField<u128> title={title} class="number" value={*amount} get_default={|_: ()| 1_u128} validate={validate} on_change={update_amount} />
             <SelectDirect<CurrencyType> items={Arc::new(CurrencyType::get_all())} selected_item={currency_type} on_change={update_type} />
         </div>
     }

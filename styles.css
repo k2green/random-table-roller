@@ -110,7 +110,7 @@ button:disabled {
 }
 
 table {
-  border: 1px solid var(--area-dark-colour);
+  column-gap: 0px;
   background-color: var(--area-dark-colour);
   border-radius: 10px;
   padding: 3px;
@@ -134,7 +134,7 @@ table th {
 }
 
 table th:nth-of-type(3),table th:nth-of-type(4) {
-    white-space: nowrap;
+  white-space: nowrap;
 }
 
 table td:first-of-type {
@@ -163,6 +163,29 @@ button.table-button {
   color: var(--text-colour);
   border: none;
   box-shadow: none;
+}
+
+table.settings {
+  border: none;
+  background-color: transparent;
+  border-radius: 0px;
+  padding: 0px;
+  margin: 5px 0px;
+}
+
+table.settings tr > td:first-of-type {
+  white-space: nowrap;
+  text-align: left;
+}
+
+table.settings tr > td:last-of-type {
+  text-align: right;
+  align-items: end;
+  width: 99%;
+}
+
+table.settings input:not([type="number"]):not([type="checkbox"]) {
+  width: calc(100% - 50px);
 }
 
 table.blank {
