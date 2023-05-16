@@ -1,10 +1,9 @@
 use std::sync::Arc;
 
 use common_data::{RollResult, Currency, RollType, RollLimit, TableData};
-use web_sys::HtmlInputElement;
 use yew::prelude::*;
 
-use crate::{components::{modal::Modal, currency_field::CurrencyFieldDirect, full_page_modal::FullPageModal, number_field::NumberField}, glue::get_random_set_with_callback, hooks::prelude::use_currency_state_eq};
+use crate::{components::{modal::Modal, currency_field::CurrencyFieldDirect, full_page_modal::FullPageModal, number_field::NumberField, checkbox::Checkbox}, glue::get_random_set_with_callback, hooks::prelude::use_currency_state_eq};
 
 fn get_roll_type_html(roll_type: RollType, on_select: Callback<RollType>) -> Html {
     let select = {
@@ -78,11 +77,8 @@ pub fn roll_by_count_modal(props: &RollByCountModalProps) -> Html {
     let update_allow_duplicates = {
         let allow_duplicates = allow_duplicates.clone();
         let count = count.clone();
-        Callback::from(move |e: Event| {
-            let target: HtmlInputElement = e.target_unchecked_into();
-            let checked = target.checked();
+        Callback::from(move |checked: bool| {
             allow_duplicates.set(checked);
-
             if !checked {
                 count.set(clamp_count(*count, 1, Some(max_count)));
             }
@@ -91,9 +87,7 @@ pub fn roll_by_count_modal(props: &RollByCountModalProps) -> Html {
 
     let update_use_weight = {
         let use_weight = use_weight.clone();
-        Callback::from(move |e: Event| {
-            let target: HtmlInputElement = e.target_unchecked_into();
-            let checked = target.checked();
+        Callback::from(move |checked: bool| {
             use_weight.set(checked);
         })
     };
@@ -117,19 +111,19 @@ pub fn roll_by_count_modal(props: &RollByCountModalProps) -> Html {
     html! {
         <Modal>
             <h3 class="header">{"Roll by count"}</h3>
-            <table class="stretch-width blank">
+            <table class="stretch-width blank left-align">
                 <tr>
                     <td>{"Count:"}</td>
-                    <NumberField<usize> class="number" get_default={|_: ()| 1_usize} value={*count} validate={validate_count} on_change={update_count} />
+                    <td><NumberField<usize> class="number" get_default={|_: ()| 1_usize} value={*count} validate={validate_count} on_change={update_count} /></td>
                 </tr>
                 <tr>
                     <td>{"Allow duplicates:"}</td>
-                    <input type="checkbox" checked={*allow_duplicates} onchange={update_allow_duplicates} />
+                    <td><Checkbox class="stretch-height flex-row center-cross-axis end-main-axis" checked={*allow_duplicates} on_change={update_allow_duplicates} /></td>
                 </tr>
                 if table_uses_weights {
                     <tr>
                         <td>{"Weighted rolls:"}</td>
-                        <input type="checkbox" checked={*use_weight} onchange={update_use_weight} />
+                        <td><Checkbox class="stretch-height flex-row center-cross-axis end-main-axis" checked={*use_weight} on_change={update_use_weight} /></td>
                     </tr>
                 }
             </table>
@@ -170,11 +164,8 @@ pub fn roll_by_cost_modal(props: &RollByCostModalProps) -> Html {
     let update_allow_duplicates = {
         let cost = cost.clone();
         let allow_duplicates = allow_duplicates.clone();
-        Callback::from(move |e: Event| {
-            let target: HtmlInputElement = e.target_unchecked_into();
-            let checked = target.checked();
+        Callback::from(move |checked: bool| {
             allow_duplicates.set(checked);
-
             if !checked {
                 cost.set(clamp_cost(cost.currency(), Currency::Copper(1), Some(max_cost)));
             }
@@ -183,9 +174,7 @@ pub fn roll_by_cost_modal(props: &RollByCostModalProps) -> Html {
 
     let update_use_weight = {
         let use_weight = use_weight.clone();
-        Callback::from(move |e: Event| {
-            let target: HtmlInputElement = e.target_unchecked_into();
-            let checked = target.checked();
+        Callback::from(move |checked: bool| {
             use_weight.set(checked);
         })
     };
@@ -207,19 +196,19 @@ pub fn roll_by_cost_modal(props: &RollByCostModalProps) -> Html {
     html! {
         <Modal>
             <h3 class="header">{"Roll by count"}</h3>
-            <table class="stretch-width blank">
+            <table class="stretch-width blank left-align">
                 <tr>
                     <td>{"Count:"}</td>
                     <CurrencyFieldDirect amount={cost.amount_handle()} currency_type={cost.currency_type_handle()} on_change={update_cost} />
                 </tr>
                 <tr>
                     <td>{"Allow duplicates:"}</td>
-                    <input type="checkbox" checked={*allow_duplicates} onchange={update_allow_duplicates} />
+                    <Checkbox class="stretch-height flex-row center-cross-axis end-main-axis" checked={*allow_duplicates} on_change={update_allow_duplicates} />
                 </tr>
                 if table_uses_weights {
                     <tr>
                         <td>{"Weighted rolls:"}</td>
-                        <input type="checkbox" checked={*use_weight} onchange={update_use_weight} />
+                        <Checkbox class="stretch-height flex-row center-cross-axis end-main-axis" checked={*use_weight} on_change={update_use_weight} />
                     </tr>
                 }
             </table>

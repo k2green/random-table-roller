@@ -4,7 +4,7 @@ use common_data::{TableEntry, Currency};
 use web_sys::HtmlInputElement;
 use yew::prelude::*;
 
-use crate::{components::{menu::Menu, table_tabs::TableTabs, full_page_modal::FullPageModal, remove_button::RemoveButton, currency_field::CurrencyField, number_field::NumberField}, hooks::prelude::*, glue::*};
+use crate::{components::{menu::Menu, table_tabs::TableTabs, full_page_modal::FullPageModal, remove_button::RemoveButton, currency_field::CurrencyField, number_field::NumberField, checkbox::Checkbox}, hooks::prelude::*, glue::*};
 
 fn save_table(is_menu_open: UseStateHandle<bool>, tables: UseTablesHandle) {
     let is_menu_open = is_menu_open.clone();
@@ -128,21 +128,19 @@ fn new_table_modal(props: &NewTableModalProps) -> Html {
     let entries = use_vec_state(|| Vec::<TableEntry>::new());
     let use_cost = use_state_eq(|| false);
     let use_weight = use_state_eq(|| false);
-    let disable_add_button = table_name.trim().is_empty() || (entries.len() > 0 && entries.iter().any(|e| e.name().trim().is_empty()));
+    let disable_add_button = table_name.trim().is_empty() || entries.len() == 0 || entries.iter().any(|e| e.name().trim().is_empty());
 
     let update_use_cost = {
         let use_cost = use_cost.clone();
-        Callback::from(move |e: Event| {
-            let target: HtmlInputElement = e.target_unchecked_into();
-            use_cost.set(target.checked());
+        Callback::from(move |checked: bool| {
+            use_cost.set(checked);
         })
     };
 
     let update_use_weight = {
         let use_weight = use_weight.clone();
-        Callback::from(move |e: Event| {
-            let target: HtmlInputElement = e.target_unchecked_into();
-            use_weight.set(target.checked());
+        Callback::from(move |checked: bool| {
+            use_weight.set(checked);
         })
     };
 
@@ -256,10 +254,10 @@ fn new_table_modal(props: &NewTableModalProps) -> Html {
                 <div class="flex-row">
                     <input class="flex-grow-1" value={entry.name().to_string()} onchange={update_entry} />
                     if *use_weight {
-                        <NumberField<usize> class="number" value={entry.weight()} validate={validate_weight} on_change={set_weight} />
+                        <NumberField<usize> title="Weight" class="number" value={entry.weight()} validate={validate_weight} on_change={set_weight} />
                     }
                     if *use_cost {
-                        <CurrencyField on_change={currency_changed} />
+                        <CurrencyField title="Cost" on_change={currency_changed} />
                     }
                     <RemoveButton on_click={remove_entry} />
                 </div>
@@ -270,20 +268,22 @@ fn new_table_modal(props: &NewTableModalProps) -> Html {
     html! {
         <FullPageModal>
             <h3 class="heading">{"New Table"}</h3>
-            <div class="flex-row">
-                <p class="flex-grow-1">{"Use costs:"}</p>
-                <input type="checkbox" checked={*use_cost} onchange={update_use_cost} />
-            </div>
-            <div class="flex-row">
-                <p class="flex-grow-1">{"Use weights:"}</p>
-                <input type="checkbox" checked={*use_weight} onchange={update_use_weight} />
-            </div>
-            <div class="flex-row">
-                <p>{"Table Name:"}</p>
-                <input class="flex-grow-1" value={(*table_name).clone()} onchange={update_name} />
-            </div>
-            <p class="vert-margin">{"Below you can add the initial entries in the table. Multiple entries can be added by splitting them into multiple lines."}</p>
-            <div class="flex-column flex-grow-1 table-style">
+            <table class="stretch-width settings">
+                <tr>
+                    <td><p>{"Table Name:"}</p></td>
+                    <td><input class="flex-grow-1" value={(*table_name).clone()} onchange={update_name} /></td>
+                </tr>
+                <tr>
+                    <td><p class="flex-grow-1">{"Use costs:"}</p></td>
+                    <td><Checkbox class="stretch-height flex-row center-cross-axis end-main-axis" checked={*use_cost} on_change={update_use_cost} /></td>
+                </tr>
+                <tr>
+                    <td><p class="flex-grow-1">{"Use weights:"}</p></td>
+                    <td><Checkbox class="stretch-height flex-row center-cross-axis end-main-axis" checked={*use_weight} on_change={update_use_weight} /></td>
+                </tr>
+            </table>
+            <p class="vert-margin">{"Below you can add the initial entries in the table. Use the '+' button to add an entry and then use the fields to edit it."}</p>
+            <div class="flex-column flex-grow-1 table-style vert-margin">
                 <h2>{"Table entries"}</h2>
                 <div class="flex-column content">
                 {entry_items}
