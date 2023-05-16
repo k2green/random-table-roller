@@ -111,7 +111,6 @@ fn tab_content(props: &TabContentProps) -> Html {
     let TabContentProps { tables, table } = props.clone();
     let is_edit_modal_open = use_state_eq(|| false);
     let is_roll_modal_open = use_state_eq(|| false);
-    let id = table.id();
 
     let open_roll_modal = {
         let is_roll_modal_open = is_roll_modal_open.clone();
