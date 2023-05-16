@@ -86,7 +86,7 @@ input::-webkit-inner-spin-button {
 input.number {
   text-align: right;
   padding-right: 8px;
-  margin: 0px 8px;
+  margin: 0px 4px;
   width: 50px;
 }
 
@@ -130,9 +130,6 @@ table tbody input {
 
 table th {
   text-align: left;
-}
-
-table th:first-of-type {
   padding: 0px 10px;
 }
 

@@ -54,6 +54,7 @@ impl RollResult {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TableEntry {
+    weight: usize,
     name: String,
     cost: Currency
 }
@@ -73,9 +74,26 @@ impl Ord for TableEntry {
 impl TableEntry {
     pub fn new(cost: Currency) -> Self {
         Self {
+            weight: 1,
             name: String::new(),
             cost
         }
+    }
+
+    pub fn with_weight(weight: usize, cost: Currency) -> Self {
+        Self {
+            name: String::new(),
+            weight,
+            cost
+        }
+    }
+
+    pub fn weight(&self) -> usize {
+        self.weight
+    }
+
+    pub fn set_weight(&mut self, weight: usize) {
+        self.weight = weight;
     }
 
     pub fn name(&self) -> &str {
@@ -130,15 +148,15 @@ impl<'de> Deserialize<'de> for Table {
 }
 
 impl Table {
-    pub fn new(use_cost: bool, name: impl Into<String>, order: usize) -> (Uuid, Self) {
-        let table = TableData::new(use_cost, name, order);
+    pub fn new(use_cost: bool, use_weight: bool, name: impl Into<String>, order: usize) -> (Uuid, Self) {
+        let table = TableData::new(use_cost, use_weight, name, order);
         let id = table.id();
 
         (id, Self { data: Arc::new(Mutex::new(table)) })
     }
 
-    pub fn with_capacity(use_cost: bool, name: impl Into<String>, capacity: usize, order: usize) -> (Uuid, Self) {
-        let table = TableData::with_capacity(use_cost, name, capacity, order);
+    pub fn with_capacity(use_cost: bool, use_weight: bool, name: impl Into<String>, capacity: usize, order: usize) -> (Uuid, Self) {
+        let table = TableData::with_capacity(use_cost, use_weight, name, capacity, order);
         let id = table.id();
 
         (id, Self { data: Arc::new(Mutex::new(table)) })
@@ -152,6 +170,7 @@ impl Table {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct FileTableData {
     use_cost: bool,
+    use_weight: bool,
     name: String,
     entries: Vec<TableEntry>,
 }
@@ -159,6 +178,7 @@ pub struct FileTableData {
 impl FileTableData {
     pub fn into_table_data(self, order: usize, path: Option<PathBuf>) -> TableData {
         TableData {
+            use_weight: self.use_weight,
             use_cost: self.use_cost,
             id: Uuid::new_v4(),
             order,
@@ -172,6 +192,7 @@ impl FileTableData {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TableData {
     use_cost: bool,
+    use_weight: bool,
     id: Uuid,
     #[serde(skip)]
     order: usize,
@@ -181,9 +202,10 @@ pub struct TableData {
 }
 
 impl TableData {
-    pub fn new(use_cost: bool, name: impl Into<String>, order: usize) -> TableData {
+    pub fn new(use_cost: bool, use_weight: bool, name: impl Into<String>, order: usize) -> TableData {
         Self {
             use_cost,
+            use_weight,
             order,
             id: Uuid::new_v4(),
             name: name.into(),
@@ -192,9 +214,10 @@ impl TableData {
         }
     }
 
-    pub fn with_capacity(use_cost: bool, name: impl Into<String>, capacity: usize, order: usize) -> TableData {
+    pub fn with_capacity(use_cost: bool, use_weight: bool, name: impl Into<String>, capacity: usize, order: usize) -> TableData {
         Self {
             use_cost,
+            use_weight,
             order,
             id: Uuid::new_v4(),
             name: name.into(),
@@ -205,10 +228,15 @@ impl TableData {
 
     pub fn to_file_data(&self) -> FileTableData {
         FileTableData {
+            use_weight: self.use_weight,
             use_cost: self.use_cost,
             name: self.name.clone(),
             entries: self.entries.clone()
         }
+    }
+
+    pub fn total_weight(&self) -> usize {
+        self.entries.iter().map(|e| e.weight).sum()
     }
 
     pub fn total_cost(&self) -> Currency {
@@ -221,6 +249,10 @@ impl TableData {
 
     pub fn use_cost(&self) -> bool {
         self.use_cost
+    }
+
+    pub fn use_weight(&self) -> bool {
+        self.use_weight
     }
 
     pub fn id(&self) -> Uuid {
@@ -284,18 +316,28 @@ impl TableData {
         Ok(&self.entries[rng.gen_range(0..self.len())])
     }
 
-    pub fn get_random_set_by_count(&self, count: usize, allow_duplicates: bool) -> Result<Vec<RollResult>, getrandom::Error> {
+    fn get_allowed_indexes<F: Fn(usize, &TableEntry) -> bool>(&self, use_weights: bool, filter: F) -> Vec<usize> {
+        let mut indeces = Vec::new();
+
+        for (index, entry) in self.entries.iter().enumerate() {
+            if filter(index, entry) {
+                let count = if use_weights { entry.weight } else { 1 };
+                for _ in 0..count {
+                    indeces.push(index);
+                }
+            }
+        }
+
+        indeces
+    }
+
+    pub fn get_random_set_by_count(&self, use_weights: bool, count: usize, allow_duplicates: bool) -> Result<Vec<RollResult>, getrandom::Error> {
         let mut rng = create_rng()?;
         let mut rolls: HashMap<usize, usize> = HashMap::new();
 
         for _ in 0..count {
-            let mut roll = rng.gen_range(0..self.len());
-
-            if !allow_duplicates {
-                while rolls.contains_key(&roll) {
-                    roll = rng.gen_range(0..self.len());
-                }
-            }
+            let allowed = self.get_allowed_indexes(use_weights, |i, _| allow_duplicates || !rolls.contains_key(&i));
+            let roll = allowed[rng.gen_range(0..allowed.len())];
 
             match rolls.get_mut(&roll) {
                 Some(rolls) => *rolls += 1,
@@ -315,24 +357,17 @@ impl TableData {
         Ok(output)
     }
 
-    pub fn get_random_set_by_cost(&self, cost: Currency, allow_duplicates: bool) -> Result<Vec<RollResult>, getrandom::Error> {
+    pub fn get_random_set_by_cost(&self, use_weights: bool, cost: Currency, allow_duplicates: bool) -> Result<Vec<RollResult>, getrandom::Error> {
         let mut remaining = cost;
         let mut rng = create_rng()?;
         let mut rolls: HashMap<usize, usize> = HashMap::new();
 
         while self.entries.iter().any(|entry| entry.cost() <= remaining) {
-            let allowed = self.entries.iter()
-                .enumerate()
-                .filter_map(|(index, entry)| if entry.cost() <= remaining { Some(index) } else { None })
-                .collect::<Vec<_>>();
+            let allowed =  self.get_allowed_indexes(use_weights, |i, e| {
+                e.cost() <= remaining && (allow_duplicates || !rolls.contains_key(&i))
+            });
 
-            let mut roll = allowed[rng.gen_range(0..allowed.len())];
-
-            if !allow_duplicates {
-                while rolls.contains_key(&roll) {
-                    roll = allowed[rng.gen_range(0..allowed.len())];
-                }
-            }
+            let roll = allowed[rng.gen_range(0..allowed.len())];
 
             remaining -= self.entries[roll].cost();
 

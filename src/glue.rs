@@ -34,12 +34,14 @@ pub fn get_table_with_callback(id: Uuid, callback: impl Into<Callback<TableData>
 struct NewTableArgs {
     #[serde(rename = "useCost")]
     use_cost: bool,
+    #[serde(rename = "useWeight")]
+    use_weight: bool,
     name: String,
     entries: Vec<TableEntry>
 }
 
-pub async fn new_table(use_cost: bool, name: impl Into<String>, entries: Vec<TableEntry>) -> Result<Uuid, Error> {
-    let args = serde_wasm_bindgen::to_value(&NewTableArgs { use_cost, name: name.into(), entries }).map_err_and_log(Error::SerdeWasmBindgenError)?;
+pub async fn new_table(use_cost: bool, use_weight: bool, name: impl Into<String>, entries: Vec<TableEntry>) -> Result<Uuid, Error> {
+    let args = serde_wasm_bindgen::to_value(&NewTableArgs { use_cost, use_weight, name: name.into(), entries }).map_err_and_log(Error::SerdeWasmBindgenError)?;
     let res = invoke("new_table", args).await;
 
     log::info!("Result: {:?}", &res);
@@ -47,8 +49,8 @@ pub async fn new_table(use_cost: bool, name: impl Into<String>, entries: Vec<Tab
     from_result(res)
 }
 
-pub fn new_table_with_callback(use_cost: bool, name: impl Into<String>, entries: Vec<TableEntry>, callback: impl Into<Callback<Uuid>>) {
-    wasm_bindgen_futures::spawn_local(emit_callback_if_ok(new_table(use_cost, name.into(), entries), callback.into()));
+pub fn new_table_with_callback(use_cost: bool, use_weight: bool, name: impl Into<String>, entries: Vec<TableEntry>, callback: impl Into<Callback<Uuid>>) {
+    wasm_bindgen_futures::spawn_local(emit_callback_if_ok(new_table(use_cost, use_weight, name.into(), entries), callback.into()));
 }
 
 #[derive(Debug, Clone, Copy, Serialize)]
@@ -129,16 +131,18 @@ struct GetRandomSetArgs {
     id: Uuid,
     limit: RollLimit,
     #[serde(rename = "allowDuplicates")]
-    allow_duplicates: bool
+    allow_duplicates: bool,
+    #[serde(rename = "useWeight")]
+    use_weight: bool
 }
 
-pub async fn get_random_set(id: Uuid, limit: RollLimit, allow_duplicates: bool) -> Result<Vec<RollResult>, Error> {
-    let args = serde_wasm_bindgen::to_value(&GetRandomSetArgs { id, limit, allow_duplicates }).map_err_and_log(Error::SerdeWasmBindgenError)?;
+pub async fn get_random_set(id: Uuid, limit: RollLimit, allow_duplicates: bool, use_weight: bool) -> Result<Vec<RollResult>, Error> {
+    let args = serde_wasm_bindgen::to_value(&GetRandomSetArgs { id, limit, allow_duplicates, use_weight }).map_err_and_log(Error::SerdeWasmBindgenError)?;
     from_result(invoke("get_random_set", args).await)
 }
 
-pub fn get_random_set_with_callback(id: Uuid, limit: RollLimit, allow_duplicates: bool, callback: impl Into<Callback<Vec<RollResult>>>) {
-    wasm_bindgen_futures::spawn_local(emit_callback_if_ok(get_random_set(id, limit, allow_duplicates), callback.into()));
+pub fn get_random_set_with_callback(id: Uuid, limit: RollLimit, allow_duplicates: bool, use_weight: bool, callback: impl Into<Callback<Vec<RollResult>>>) {
+    wasm_bindgen_futures::spawn_local(emit_callback_if_ok(get_random_set(id, limit, allow_duplicates, use_weight), callback.into()));
 }
 
 #[derive(Debug, Clone, Serialize)]

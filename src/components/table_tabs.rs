@@ -95,38 +95,38 @@ fn entry_row(index: usize, entry: &TableEntry, id: Uuid, tables: UseTablesHandle
         })
     };
 
-    if table.use_cost() {
-        entry_row_with_cost(index, entry, remove_entry)
-    } else {
-        entry_row_without_cost(index, entry, remove_entry)
-    }
-}
-
-fn entry_row_without_cost(index: usize, entry: &TableEntry, remove_entry: Callback<MouseEvent>) -> Html {
+    let use_weight = table.use_weight();
+    let use_cost = table.use_cost();
+    
     html! {
         <tr>
             <td>{index + 1}</td>
             <td>
                 <div class="flex-row min-height">
                     <p class="flex-grow-1">{entry.name()}</p>
-                    <RemoveButton on_click={remove_entry.clone()} />
+                    if !use_weight && !use_cost {
+                        <RemoveButton on_click={remove_entry.clone()} />
+                    }
                 </div>
             </td>
-        </tr>
-    }
-}
-
-fn entry_row_with_cost(index: usize, entry: &TableEntry, remove_entry: Callback<MouseEvent>) -> Html {
-    html! {
-        <tr>
-            <td>{index + 1}</td>
-            <td>{entry.name()}</td>
-            <td>
-                <div class="flex-row min-height">
-                    <p class="flex-grow-1">{entry.cost().to_string()}</p>
-                    <RemoveButton on_click={remove_entry.clone()} />
-                </div>
-            </td>
+            if use_weight {
+                <td>
+                    <div class="flex-row min-height">
+                        <p class="flex-grow-1">{entry.weight().to_string()}</p>
+                        if !use_cost {
+                            <RemoveButton on_click={remove_entry.clone()} />
+                        }
+                    </div>
+                </td>
+            }
+            if use_cost {
+                <td>
+                    <div class="flex-row min-height">
+                        <p class="flex-grow-1">{entry.cost().to_string()}</p>
+                        <RemoveButton on_click={remove_entry.clone()} />
+                    </div>
+                </td>
+            }
         </tr>
     }
 }
@@ -190,6 +190,9 @@ fn tab_content(props: &TabContentProps) -> Html {
                         <tr>
                             <th>{"Roll"}</th>
                             <th>{"Entry"}</th>
+                            if table.use_weight() {
+                                <th>{"Weight"}</th>
+                            }
                             if table.use_cost() {
                                 <th>{"Cost"}</th>
                             }
@@ -257,8 +260,8 @@ fn random_roll_modal(props: &RandomRollModalProps) -> Html {
 
     match &*current_modal {
         RollModal::SelectMode => html! { <RollTypeSelectionModal on_select={select_roll_type} on_cancel={close_modal.clone()} /> },
-        RollModal::RollByCount => html! { <RollByCountModal table_id={table.id()} max_count={table.len()} on_complete={complete} on_cancel={close_modal} /> },
-        RollModal::RollByCost => html! { <RollByCostModal table_id={table.id()} max_cost={table.total_cost()} on_complete={complete} on_cancel={close_modal} /> },
+        RollModal::RollByCount => html! { <RollByCountModal table={table.clone()} max_count={table.len()} on_complete={complete} on_cancel={close_modal} /> },
+        RollModal::RollByCost => html! { <RollByCostModal table={table.clone()} max_cost={table.total_cost()} on_complete={complete} on_cancel={close_modal} /> },
         RollModal::Results => html! { <RollResultsModal show_cost={use_cost} results={(*results).clone()} on_close={close_modal} /> },
     }
 }

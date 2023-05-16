@@ -10,7 +10,12 @@ pub trait Number: Clone + Copy + PartialEq + Eq + PartialOrd + Ord + Display + F
     fn get_min() -> Self;
 }
 
-fn validate_callback<T: TargetCast, N: Number>(value: UseStateHandle<N>, validate: Callback<N, N>, get_default: Option<Callback<(), N>>, on_change: Option<Callback<N>>) -> Callback<T> {
+fn validate_callback<T: TargetCast, N: Number>(
+    value: N,
+    validate: Callback<N, N>,
+    get_default: Option<Callback<(), N>>,
+    on_change: Option<Callback<N>>
+) -> Callback<T> {
     Callback::from(move |e: T| {
         let get_default = get_default.clone();
         let on_change = on_change.clone();
@@ -25,13 +30,12 @@ fn validate_callback<T: TargetCast, N: Number>(value: UseStateHandle<N>, validat
         } else {
             match try_parse(&str_value, N::from_str) {
                 Some(value) => validate.emit(value),
-                None => *value
+                None => value
             }
         };
         
         let clamped = new_value.clamp(N::get_min(), N::get_max());
 
-        value.set(clamped);
         target.set_value(&clamped.to_string());
         
         if let Some(on_change) = on_change {
@@ -42,7 +46,7 @@ fn validate_callback<T: TargetCast, N: Number>(value: UseStateHandle<N>, validat
 
 #[derive(Debug, Clone, PartialEq, Properties)]
 pub struct NumberFieldProps<T: Number> {
-    pub value: UseStateHandle<T>,
+    pub value: T,
     pub validate: Callback<T, T>,
     #[prop_or_default]
     pub get_default: Option<Callback<(), T>>,
@@ -56,8 +60,8 @@ pub struct NumberFieldProps<T: Number> {
 pub fn number_field<T: Number>(props: &NumberFieldProps<T>) -> Html {
     let NumberFieldProps { value, validate, get_default, class, on_change } = props.clone();
     
-    let on_input = validate_callback::<InputEvent, T>(value.clone(), validate.clone(), get_default.clone(), None);
-    let on_change = validate_callback::<Event, T>(value.clone(), validate.clone(), get_default.clone(), Some(on_change));
+    let on_input = validate_callback::<InputEvent, _>(value, validate.clone(), get_default.clone(), None);
+    let on_change = validate_callback::<Event, _>(value, validate.clone(), get_default.clone(), Some(on_change));
 
     html! {
         <input class={class} value={value.to_string()} oninput={on_input} onchange={on_change} />
