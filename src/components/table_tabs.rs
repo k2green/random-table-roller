@@ -3,7 +3,7 @@ use std::sync::Arc;
 use common_data::{TableData, RollResult, TableEntry, RollType};
 use yew::prelude::*;
 
-use crate::{hooks::prelude::UseTablesHandle, glue::*, components::{editable_header::EditableHeader, remove_button::RemoveButton, roll_modals::{RollTypeSelectionModal, RollByCountModal, RollByCostModal, RollResultsModal}, edit_table_modal::EditTableModal}};
+use crate::{hooks::prelude::UseTablesHandle, glue::*, components::{remove_button::RemoveButton, roll_modals::{RollTypeSelectionModal, RollByCountModal, RollByCostModal, RollResultsModal}, edit_table_modal::EditTableModal}};
 
 #[derive(Debug, Clone, PartialEq, Properties)]
 pub struct TableTabsProps {
@@ -120,18 +120,6 @@ fn tab_content(props: &TabContentProps) -> Html {
         })
     };
 
-    let set_name = {
-        let tables = tables.clone();
-
-        Callback::from(move |name: String| {
-            let tables = tables.clone();
-            change_table_name_with_callback(id, name, move |_| {
-                tables.update();
-                tables.update_data();
-            })
-        })
-    };
-
     let open_edit_modal = {
         let is_edit_modal_open = is_edit_modal_open.clone();
         Callback::from(move |_: MouseEvent| {
@@ -169,7 +157,7 @@ fn tab_content(props: &TabContentProps) -> Html {
                 <RandomRollModal table={table.clone()} use_cost={table.use_cost()} is_open={is_roll_modal_open} />
             }
             <div class="flex-column flex-grow-1">
-                <EditableHeader text={table.name().to_string()} callback={set_name} />
+                <h2 class="heading">{table.name().to_string()}</h2>
                 <table>
                     <thead>
                         <tr>
