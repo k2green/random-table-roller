@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
-use common_data::{RollResult, Currency, RollType, RollLimit};
-use uuid::Uuid;
+use common_data::{RollResult, Currency, RollType, RollLimit, TableData};
 use web_sys::HtmlInputElement;
 use yew::prelude::*;
 
@@ -53,7 +52,7 @@ pub fn roll_type_selection_modal(props: &RollTypeSelectionModalProps) -> Html {
 
 #[derive(Debug, Clone, PartialEq, Properties)]
 pub struct RollByCountModalProps {
-    pub table_id: Uuid,
+    pub table: Arc<TableData>,
     pub max_count: usize,
     pub on_complete: Callback<Vec<RollResult>>,
     pub on_cancel: Callback<MouseEvent>,
@@ -61,9 +60,12 @@ pub struct RollByCountModalProps {
 
 #[function_component(RollByCountModal)]
 pub fn roll_by_count_modal(props: &RollByCountModalProps) -> Html {
-    let RollByCountModalProps { table_id, max_count, on_complete, on_cancel } = props.clone();
+    let RollByCountModalProps { table, max_count, on_complete, on_cancel } = props.clone();
     let count = use_state_eq(|| 1_usize);
     let allow_duplicates = use_state_eq(|| true);
+    let use_weight = use_state_eq(|| false);
+    let table_uses_weights = table.use_weight();
+    let table_id = table.id();
     let max = if *allow_duplicates { None } else { Some(max_count) };
 
     let update_count = {
@@ -87,14 +89,24 @@ pub fn roll_by_count_modal(props: &RollByCountModalProps) -> Html {
         })
     };
 
+    let update_use_weight = {
+        let use_weight = use_weight.clone();
+        Callback::from(move |e: Event| {
+            let target: HtmlInputElement = e.target_unchecked_into();
+            let checked = target.checked();
+            use_weight.set(checked);
+        })
+    };
+
     let on_complete = {
         let count = count.clone();
         let allow_duplicates = allow_duplicates.clone();
+        let use_weight = use_weight.clone();
         let on_complete = on_complete.clone();
 
         Callback::from(move |_: MouseEvent| {
             let on_complete = on_complete.clone();
-            get_random_set_with_callback(table_id, RollLimit::Count(*count), *allow_duplicates, move |results| {
+            get_random_set_with_callback(table_id, RollLimit::Count(*count), *allow_duplicates, table_uses_weights && *use_weight, move |results| {
                 on_complete.emit(results);
             })
         })
@@ -114,6 +126,12 @@ pub fn roll_by_count_modal(props: &RollByCountModalProps) -> Html {
                     <td>{"Allow duplicates:"}</td>
                     <input type="checkbox" checked={*allow_duplicates} onchange={update_allow_duplicates} />
                 </tr>
+                if table_uses_weights {
+                    <tr>
+                        <td>{"Weighted rolls:"}</td>
+                        <input type="checkbox" checked={*use_weight} onchange={update_use_weight} />
+                    </tr>
+                }
             </table>
             <div class="flex-row button-row">
                 <button class="flex-grow-1" onclick={on_complete}>{"Roll"}</button>
@@ -125,7 +143,7 @@ pub fn roll_by_count_modal(props: &RollByCountModalProps) -> Html {
 
 #[derive(Debug, Clone, PartialEq, Properties)]
 pub struct RollByCostModalProps {
-    pub table_id: Uuid,
+    pub table: Arc<TableData>,
     pub max_cost: Currency,
     pub on_complete: Callback<Vec<RollResult>>,
     pub on_cancel: Callback<MouseEvent>,
@@ -133,9 +151,12 @@ pub struct RollByCostModalProps {
 
 #[function_component(RollByCostModal)]
 pub fn roll_by_cost_modal(props: &RollByCostModalProps) -> Html {
-    let RollByCostModalProps { table_id, max_cost, on_complete, on_cancel } = props.clone();
+    let RollByCostModalProps { table, max_cost, on_complete, on_cancel } = props.clone();
     let cost = use_currency_state_eq(|| Currency::Copper(1));
     let allow_duplicates = use_state_eq(|| true);
+    let use_weight = use_state_eq(|| false);
+    let table_uses_weights = table.use_weight();
+    let table_id = table.id();
     let max = if *allow_duplicates { None } else { Some(max_cost) };
 
     let update_cost = {
@@ -160,14 +181,24 @@ pub fn roll_by_cost_modal(props: &RollByCostModalProps) -> Html {
         })
     };
 
+    let update_use_weight = {
+        let use_weight = use_weight.clone();
+        Callback::from(move |e: Event| {
+            let target: HtmlInputElement = e.target_unchecked_into();
+            let checked = target.checked();
+            use_weight.set(checked);
+        })
+    };
+
     let on_complete = {
         let cost = cost.clone();
         let allow_duplicates = allow_duplicates.clone();
+        let use_weight = use_weight.clone();
         let on_complete = on_complete.clone();
 
         Callback::from(move |_: MouseEvent| {
             let on_complete = on_complete.clone();
-            get_random_set_with_callback(table_id, RollLimit::Cost(cost.currency()), *allow_duplicates, move |results| {
+            get_random_set_with_callback(table_id, RollLimit::Cost(cost.currency()), *allow_duplicates, table_uses_weights && *use_weight, move |results| {
                 on_complete.emit(results);
             })
         })
@@ -185,6 +216,12 @@ pub fn roll_by_cost_modal(props: &RollByCostModalProps) -> Html {
                     <td>{"Allow duplicates:"}</td>
                     <input type="checkbox" checked={*allow_duplicates} onchange={update_allow_duplicates} />
                 </tr>
+                if table_uses_weights {
+                    <tr>
+                        <td>{"Weighted rolls:"}</td>
+                        <input type="checkbox" checked={*use_weight} onchange={update_use_weight} />
+                    </tr>
+                }
             </table>
             <div class="flex-row button-row">
                 <button class="flex-grow-1" onclick={on_complete}>{"Roll"}</button>

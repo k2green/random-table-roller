@@ -178,7 +178,7 @@ fn get_random(state: State<AppState>, id: Uuid) -> Result<TableEntry, BackendErr
 }
 
 #[tauri::command]
-fn get_random_set(state: State<AppState>, id: Uuid, limit: RollLimit, allow_duplicates: bool) -> Result<Vec<RollResult>, BackendError> {
+fn get_random_set(state: State<AppState>, id: Uuid, limit: RollLimit, allow_duplicates: bool, use_weight: bool) -> Result<Vec<RollResult>, BackendError> {
     log::info!("Getting '{:?}' random entries from table with id '{}'...", limit, id);
     let tables = log_result(state.lock_tables())?;
     let table = log_result(tables.get(&id)
@@ -186,8 +186,8 @@ fn get_random_set(state: State<AppState>, id: Uuid, limit: RollLimit, allow_dupl
 
     let data = table.get_data()?;
     let entries = match limit {
-        RollLimit::Count(count) => log_result(data.get_random_set_by_count(false, count, allow_duplicates).map_err(|e| BackendError::from(e)))?,
-        RollLimit::Cost(cost) => log_result(data.get_random_set_by_cost(false, cost, allow_duplicates).map_err(|e| BackendError::from(e)))?,
+        RollLimit::Count(count) => log_result(data.get_random_set_by_count(use_weight, count, allow_duplicates).map_err(|e| BackendError::from(e)))?,
+        RollLimit::Cost(cost) => log_result(data.get_random_set_by_cost(use_weight, cost, allow_duplicates).map_err(|e| BackendError::from(e)))?,
     };
 
     log::info!("Random rolls: {:?}", &entries);

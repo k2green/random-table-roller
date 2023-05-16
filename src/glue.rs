@@ -131,16 +131,18 @@ struct GetRandomSetArgs {
     id: Uuid,
     limit: RollLimit,
     #[serde(rename = "allowDuplicates")]
-    allow_duplicates: bool
+    allow_duplicates: bool,
+    #[serde(rename = "useWeight")]
+    use_weight: bool
 }
 
-pub async fn get_random_set(id: Uuid, limit: RollLimit, allow_duplicates: bool) -> Result<Vec<RollResult>, Error> {
-    let args = serde_wasm_bindgen::to_value(&GetRandomSetArgs { id, limit, allow_duplicates }).map_err_and_log(Error::SerdeWasmBindgenError)?;
+pub async fn get_random_set(id: Uuid, limit: RollLimit, allow_duplicates: bool, use_weight: bool) -> Result<Vec<RollResult>, Error> {
+    let args = serde_wasm_bindgen::to_value(&GetRandomSetArgs { id, limit, allow_duplicates, use_weight }).map_err_and_log(Error::SerdeWasmBindgenError)?;
     from_result(invoke("get_random_set", args).await)
 }
 
-pub fn get_random_set_with_callback(id: Uuid, limit: RollLimit, allow_duplicates: bool, callback: impl Into<Callback<Vec<RollResult>>>) {
-    wasm_bindgen_futures::spawn_local(emit_callback_if_ok(get_random_set(id, limit, allow_duplicates), callback.into()));
+pub fn get_random_set_with_callback(id: Uuid, limit: RollLimit, allow_duplicates: bool, use_weight: bool, callback: impl Into<Callback<Vec<RollResult>>>) {
+    wasm_bindgen_futures::spawn_local(emit_callback_if_ok(get_random_set(id, limit, allow_duplicates, use_weight), callback.into()));
 }
 
 #[derive(Debug, Clone, Serialize)]

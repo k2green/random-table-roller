@@ -130,9 +130,6 @@ table tbody input {
 
 table th {
   text-align: left;
-}
-
-table th:first-of-type {
   padding: 0px 10px;
 }
 

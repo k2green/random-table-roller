@@ -260,8 +260,8 @@ fn random_roll_modal(props: &RandomRollModalProps) -> Html {
 
     match &*current_modal {
         RollModal::SelectMode => html! { <RollTypeSelectionModal on_select={select_roll_type} on_cancel={close_modal.clone()} /> },
-        RollModal::RollByCount => html! { <RollByCountModal table_id={table.id()} max_count={table.len()} on_complete={complete} on_cancel={close_modal} /> },
-        RollModal::RollByCost => html! { <RollByCostModal table_id={table.id()} max_cost={table.total_cost()} on_complete={complete} on_cancel={close_modal} /> },
+        RollModal::RollByCount => html! { <RollByCountModal table={table.clone()} max_count={table.len()} on_complete={complete} on_cancel={close_modal} /> },
+        RollModal::RollByCost => html! { <RollByCostModal table={table.clone()} max_cost={table.total_cost()} on_complete={complete} on_cancel={close_modal} /> },
         RollModal::Results => html! { <RollResultsModal show_cost={use_cost} results={(*results).clone()} on_close={close_modal} /> },
     }
 }
