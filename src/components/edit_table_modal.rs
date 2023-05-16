@@ -4,7 +4,7 @@ use common_data::{TableData, Currency, TableEntry};
 use web_sys::HtmlInputElement;
 use yew::prelude::*;
 
-use crate::{components::{full_page_modal::FullPageModal, number_field::NumberField, currency_field::CurrencyField, remove_button::RemoveButton}, hooks::prelude::*, glue::update_table_with_callback};
+use crate::{components::{full_page_modal::FullPageModal, number_field::NumberField, currency_field::CurrencyField, remove_button::RemoveButton, checkbox::Checkbox}, hooks::prelude::*, glue::update_table_with_callback};
 
 #[derive(Debug, Clone, PartialEq, Properties)]
 pub struct EditTableModalProps {
@@ -102,19 +102,15 @@ fn edit_table_modal_content(props: &EditTableModalContentProps) -> Html {
 
     let update_use_cost = {
         let use_cost = use_cost.clone();
-
-        Callback::from(move |e: Event| {
-            let target: HtmlInputElement = e.target_unchecked_into();
-            use_cost.set(target.checked());
+        Callback::from(move |checked: bool| {
+            use_cost.set(checked);
         })
     };
 
     let update_use_weight = {
         let use_weight = use_weight.clone();
-
-        Callback::from(move |e: Event| {
-            let target: HtmlInputElement = e.target_unchecked_into();
-            use_weight.set(target.checked());
+        Callback::from(move |checked: bool| {
+            use_weight.set(checked);
         })
     };
 
@@ -219,11 +215,11 @@ fn edit_table_modal_content(props: &EditTableModalContentProps) -> Html {
                     </tr>
                     <tr>
                         <td><p class="flex-grow-1">{"Use costs:"}</p></td>
-                        <td><input type="checkbox" checked={*use_cost} onchange={update_use_cost} /></td>
+                        <td><Checkbox class="stretch-height flex-row center-cross-axis end-main-axis" checked={*use_cost} on_change={update_use_cost} /></td>
                     </tr>
                     <tr>
                         <td><p class="flex-grow-1">{"Use weights:"}</p></td>
-                        <td><input type="checkbox" checked={*use_weight} onchange={update_use_weight} /></td>
+                        <td><Checkbox class="stretch-height flex-row center-cross-axis end-main-axis" checked={*use_weight} on_change={update_use_weight} /></td>
                     </tr>
                 </table>
                 <div class="flex-column flex-grow-1 table-style">
