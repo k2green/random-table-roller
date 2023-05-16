@@ -138,7 +138,7 @@ pub fn currency_field(props: &CurrencyFieldDirectProps) -> Html {
 
     html! {
         <div class={classes!(container_class, "flex-row")}>
-            <NumberField<u128> class="number" value={amount.clone()} get_default={|_: ()| 1_u128} validate={validate} on_change={update_amount} />
+            <NumberField<u128> class="number" value={*amount} get_default={|_: ()| 1_u128} validate={validate} on_change={update_amount} />
             <SelectDirect<CurrencyType> items={Arc::new(CurrencyType::get_all())} selected_item={currency_type} on_change={update_type} />
         </div>
     }

@@ -86,7 +86,7 @@ input::-webkit-inner-spin-button {
 input.number {
   text-align: right;
   padding-right: 8px;
-  margin: 0px 8px;
+  margin: 0px 4px;
   width: 50px;
 }
 

@@ -95,38 +95,38 @@ fn entry_row(index: usize, entry: &TableEntry, id: Uuid, tables: UseTablesHandle
         })
     };
 
-    if table.use_cost() {
-        entry_row_with_cost(index, entry, remove_entry)
-    } else {
-        entry_row_without_cost(index, entry, remove_entry)
-    }
-}
-
-fn entry_row_without_cost(index: usize, entry: &TableEntry, remove_entry: Callback<MouseEvent>) -> Html {
+    let use_weight = table.use_weight();
+    let use_cost = table.use_cost();
+    
     html! {
         <tr>
             <td>{index + 1}</td>
             <td>
                 <div class="flex-row min-height">
                     <p class="flex-grow-1">{entry.name()}</p>
-                    <RemoveButton on_click={remove_entry.clone()} />
+                    if !use_weight && !use_cost {
+                        <RemoveButton on_click={remove_entry.clone()} />
+                    }
                 </div>
             </td>
-        </tr>
-    }
-}
-
-fn entry_row_with_cost(index: usize, entry: &TableEntry, remove_entry: Callback<MouseEvent>) -> Html {
-    html! {
-        <tr>
-            <td>{index + 1}</td>
-            <td>{entry.name()}</td>
-            <td>
-                <div class="flex-row min-height">
-                    <p class="flex-grow-1">{entry.cost().to_string()}</p>
-                    <RemoveButton on_click={remove_entry.clone()} />
-                </div>
-            </td>
+            if use_weight {
+                <td>
+                    <div class="flex-row min-height">
+                        <p class="flex-grow-1">{entry.weight().to_string()}</p>
+                        if !use_cost {
+                            <RemoveButton on_click={remove_entry.clone()} />
+                        }
+                    </div>
+                </td>
+            }
+            if use_cost {
+                <td>
+                    <div class="flex-row min-height">
+                        <p class="flex-grow-1">{entry.cost().to_string()}</p>
+                        <RemoveButton on_click={remove_entry.clone()} />
+                    </div>
+                </td>
+            }
         </tr>
     }
 }
@@ -190,6 +190,9 @@ fn tab_content(props: &TabContentProps) -> Html {
                         <tr>
                             <th>{"Roll"}</th>
                             <th>{"Entry"}</th>
+                            if table.use_weight() {
+                                <th>{"Weight"}</th>
+                            }
                             if table.use_cost() {
                                 <th>{"Cost"}</th>
                             }

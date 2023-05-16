@@ -251,6 +251,10 @@ impl TableData {
         self.use_cost
     }
 
+    pub fn use_weight(&self) -> bool {
+        self.use_weight
+    }
+
     pub fn id(&self) -> Uuid {
         self.id
     }

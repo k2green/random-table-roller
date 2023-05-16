@@ -80,11 +80,11 @@ fn get_table(state: State<AppState>, id: Uuid) -> Result<Table, BackendError> {
 }
 
 #[tauri::command]
-fn new_table(state: State<AppState>, use_cost: bool, name: String, entries: Vec<TableEntry>) -> Result<Uuid, BackendError> {
+fn new_table(state: State<AppState>, use_cost: bool, use_weight: bool, name: String, entries: Vec<TableEntry>) -> Result<Uuid, BackendError> {
     log::info!("Adding new table with name '{}'...", &name);
     let mut tables = log_result(state.lock_tables())?;
 
-    let mut table_data = TableData::new(use_cost, false, name, tables.len());
+    let mut table_data = TableData::new(use_cost, use_weight, name, tables.len());
     let id = table_data.id();
 
     for mut entry in entries {

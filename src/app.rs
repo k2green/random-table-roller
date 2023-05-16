@@ -4,7 +4,7 @@ use common_data::{TableEntry, Currency};
 use web_sys::HtmlInputElement;
 use yew::prelude::*;
 
-use crate::{components::{menu::Menu, table_tabs::TableTabs, full_page_modal::FullPageModal, remove_button::RemoveButton, currency_field::CurrencyField}, hooks::prelude::*, glue::*};
+use crate::{components::{menu::Menu, table_tabs::TableTabs, full_page_modal::FullPageModal, remove_button::RemoveButton, currency_field::CurrencyField, number_field::NumberField}, hooks::prelude::*, glue::*};
 
 fn save_table(is_menu_open: UseStateHandle<bool>, tables: UseTablesHandle) {
     let is_menu_open = is_menu_open.clone();
@@ -127,7 +127,8 @@ fn new_table_modal(props: &NewTableModalProps) -> Html {
     let table_name = use_state_eq(|| String::new());
     let entries = use_vec_state(|| Vec::<TableEntry>::new());
     let use_cost = use_state_eq(|| false);
-    let disable_add_button = table_name.trim().is_empty();
+    let use_weight = use_state_eq(|| false);
+    let disable_add_button = table_name.trim().is_empty() || (entries.len() > 0 && entries.iter().any(|e| e.name().trim().is_empty()));
 
     let update_use_cost = {
         let use_cost = use_cost.clone();
@@ -137,9 +138,18 @@ fn new_table_modal(props: &NewTableModalProps) -> Html {
         })
     };
 
+    let update_use_weight = {
+        let use_weight = use_weight.clone();
+        Callback::from(move |e: Event| {
+            let target: HtmlInputElement = e.target_unchecked_into();
+            use_weight.set(target.checked());
+        })
+    };
+
     let add_table = {
         let is_open = is_open.clone();
         let use_cost = use_cost.clone();
+        let use_weight = use_weight.clone();
         let tables = tables.clone();
         let table_name = table_name.clone();
         let entries = entries.clone();
@@ -152,7 +162,7 @@ fn new_table_modal(props: &NewTableModalProps) -> Html {
 
             if !name.is_empty() {
                 log::info!("Entries: {:?}", &entries);
-                new_table_with_callback(*use_cost, name.to_string(), entries, move |_| {
+                new_table_with_callback(*use_cost, *use_weight, name.to_string(), entries, move |_| {
                     tables.update();
                     is_open.set(false);
                 });
@@ -224,9 +234,30 @@ fn new_table_modal(props: &NewTableModalProps) -> Html {
                 })
             };
 
+            let set_weight = {
+                let entries = entries.clone();
+                Callback::from(move |weight: usize| {
+                    entries.update(move |current_idx, old| {
+                        let mut new = old.clone();
+                        if current_idx == index {
+                            new.set_weight(weight);
+                        }
+
+                        new
+                    })
+                })
+            };
+
+            let validate_weight = Callback::from(move |weight: usize| {
+                weight.clamp(1, 100)
+            });
+
             html! {
                 <div class="flex-row">
                     <input class="flex-grow-1" value={entry.name().to_string()} onchange={update_entry} />
+                    if *use_weight {
+                        <NumberField<usize> class="number" value={entry.weight()} validate={validate_weight} on_change={set_weight} />
+                    }
                     if *use_cost {
                         <CurrencyField on_change={currency_changed} />
                     }
@@ -242,6 +273,10 @@ fn new_table_modal(props: &NewTableModalProps) -> Html {
             <div class="flex-row">
                 <p class="flex-grow-1">{"Use costs:"}</p>
                 <input type="checkbox" checked={*use_cost} onchange={update_use_cost} />
+            </div>
+            <div class="flex-row">
+                <p class="flex-grow-1">{"Use weights:"}</p>
+                <input type="checkbox" checked={*use_weight} onchange={update_use_weight} />
             </div>
             <div class="flex-row">
                 <p>{"Table Name:"}</p>

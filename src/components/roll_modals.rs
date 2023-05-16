@@ -66,6 +66,13 @@ pub fn roll_by_count_modal(props: &RollByCountModalProps) -> Html {
     let allow_duplicates = use_state_eq(|| true);
     let max = if *allow_duplicates { None } else { Some(max_count) };
 
+    let update_count = {
+        let count = count.clone();
+        Callback::from(move |value: usize| {
+            count.set(value);
+        })
+    };
+
     let update_allow_duplicates = {
         let allow_duplicates = allow_duplicates.clone();
         let count = count.clone();
@@ -101,7 +108,7 @@ pub fn roll_by_count_modal(props: &RollByCountModalProps) -> Html {
             <table class="stretch-width blank">
                 <tr>
                     <td>{"Count:"}</td>
-                    <NumberField<usize> class="number" get_default={|_: ()| 1_usize} value={count.clone()} validate={validate_count} />
+                    <NumberField<usize> class="number" get_default={|_: ()| 1_usize} value={*count} validate={validate_count} on_change={update_count} />
                 </tr>
                 <tr>
                     <td>{"Allow duplicates:"}</td>
