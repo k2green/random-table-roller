@@ -82,6 +82,7 @@ fn edit_table_modal_content(props: &EditTableModalContentProps) -> Html {
     } = props.clone();
 
     let name = use_state_eq(|| table.name().to_string());
+    let is_update_disabled = entries.len() == 0;
 
     let update_name = {
         let name = name.clone();
@@ -197,10 +198,10 @@ fn edit_table_modal_content(props: &EditTableModalContentProps) -> Html {
                 <div class="flex-row">
                     <input class="flex-grow-1" value={entry.name().to_string()} onchange={update_name} />
                     if *use_weight {
-                        <NumberField<usize> class="number" value={entry.weight()} validate={validate_weight} on_change={update_weight} />
+                        <NumberField<usize> title="Weight" class="number" value={entry.weight()} validate={validate_weight} on_change={update_weight} />
                     }
                     if *use_cost {
-                        <CurrencyField on_change={update_cost} />
+                        <CurrencyField title="Cost" on_change={update_cost} />
                     }
                     <RemoveButton on_click={remove_entry} />
                 </div>
@@ -211,15 +212,20 @@ fn edit_table_modal_content(props: &EditTableModalContentProps) -> Html {
     html! {
         <>
             <FullPageModal>
-                <input value={(*name).clone()} onchange={update_name} />
-                <div class="flex-row">
-                    <p class="flex-grow-1">{"Use costs:"}</p>
-                    <input type="checkbox" checked={*use_cost} onchange={update_use_cost} />
-                </div>
-                <div class="flex-row">
-                    <p class="flex-grow-1">{"Use weights:"}</p>
-                    <input type="checkbox" checked={*use_weight} onchange={update_use_weight} />
-                </div>
+                <table class="stretch-width settings">
+                    <tr>
+                        <td><p>{"Table Name:"}</p></td>
+                        <td><input class="flex-grow-1" value={(*name).clone()} onchange={update_name} /></td>
+                    </tr>
+                    <tr>
+                        <td><p class="flex-grow-1">{"Use costs:"}</p></td>
+                        <td><input type="checkbox" checked={*use_cost} onchange={update_use_cost} /></td>
+                    </tr>
+                    <tr>
+                        <td><p class="flex-grow-1">{"Use weights:"}</p></td>
+                        <td><input type="checkbox" checked={*use_weight} onchange={update_use_weight} /></td>
+                    </tr>
+                </table>
                 <div class="flex-column flex-grow-1 table-style">
                     <h2>{"Table entries"}</h2>
                     <div class="flex-column content">
@@ -227,7 +233,7 @@ fn edit_table_modal_content(props: &EditTableModalContentProps) -> Html {
                     </div>
                 </div>
                 <div class="flex-row button-row">
-                    <button class="flex-grow-1" onclick={update_table}>{"Update table"}</button>
+                    <button class="flex-grow-1" onclick={update_table} disabled={is_update_disabled}>{"Update table"}</button>
                     <button class="flex-grow-1" onclick={on_open_add_entries}>{"Add new entries"}</button>
                     <button class="flex-grow-1" onclick={on_cancel}>{"Cancel"}</button>
                 </div>
@@ -327,10 +333,10 @@ fn add_entry_modal(props: &AddEntryModalProps) -> Html {
                 <div class="flex-row">
                     <input class="flex-grow-1" value={entry.name().to_string()} onchange={update_entry} />
                     if use_weight {
-                        <NumberField<usize> class="number" value={entry.weight()} validate={validate_weight} on_change={weight_changed} />
+                        <NumberField<usize> title="Weight" class="number" value={entry.weight()} validate={validate_weight} on_change={weight_changed} />
                     }
                     if use_cost {
-                        <CurrencyField on_change={currency_changed} />
+                        <CurrencyField title="Cost" on_change={currency_changed} />
                     }
                     <RemoveButton on_click={remove_entry} />
                 </div>

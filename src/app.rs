@@ -128,7 +128,7 @@ fn new_table_modal(props: &NewTableModalProps) -> Html {
     let entries = use_vec_state(|| Vec::<TableEntry>::new());
     let use_cost = use_state_eq(|| false);
     let use_weight = use_state_eq(|| false);
-    let disable_add_button = table_name.trim().is_empty() || (entries.len() > 0 && entries.iter().any(|e| e.name().trim().is_empty()));
+    let disable_add_button = table_name.trim().is_empty() || entries.len() == 0 || entries.iter().any(|e| e.name().trim().is_empty());
 
     let update_use_cost = {
         let use_cost = use_cost.clone();
