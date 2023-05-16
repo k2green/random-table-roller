@@ -53,6 +53,26 @@ pub fn new_table_with_callback(use_cost: bool, use_weight: bool, name: impl Into
     wasm_bindgen_futures::spawn_local(emit_callback_if_ok(new_table(use_cost, use_weight, name.into(), entries), callback.into()));
 }
 
+#[derive(Debug, Clone, Serialize)]
+struct UpdateTableArgs {
+    id: Uuid,
+    name: Option<String>,
+    #[serde(rename = "useCost")]
+    use_cost: Option<bool>,
+    #[serde(rename = "useWeight")]
+    use_weight: Option<bool>,
+    entries: Option<Vec<TableEntry>>
+}
+
+pub async fn update_table(id: Uuid, name: Option<String>, use_cost: Option<bool>, use_weight: Option<bool>, entries: Option<Vec<TableEntry>>) -> Result<(), Error> {
+    let args = serde_wasm_bindgen::to_value(&UpdateTableArgs { id, name, use_cost, use_weight, entries }).map_err_and_log(Error::SerdeWasmBindgenError)?;
+    unit_from_result(invoke("update_table", args).await)
+}
+
+pub fn update_table_with_callback(id: Uuid, name: Option<String>, use_cost: Option<bool>, use_weight: Option<bool>, entries: Option<Vec<TableEntry>>, callback: impl Into<Callback<()>>) {
+    wasm_bindgen_futures::spawn_local(emit_callback_if_ok(update_table(id, name, use_cost, use_weight, entries), callback.into()));
+}
+
 #[derive(Debug, Clone, Copy, Serialize)]
 struct RemoveTableArgs {
     id: Uuid

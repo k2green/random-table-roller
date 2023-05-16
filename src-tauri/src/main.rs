@@ -107,6 +107,41 @@ fn new_table(state: State<AppState>, use_cost: bool, use_weight: bool, name: Str
 }
 
 #[tauri::command]
+fn update_table(
+    state: State<AppState>,
+    id: Uuid,
+    name: Option<String>,
+    use_cost: Option<bool>,
+    use_weight: Option<bool>,
+    entries: Option<Vec<TableEntry>>
+) -> Result<(), BackendError> {
+    log::info!("Updatng table with id '{}'...", id);
+    let mut tables = log_result(state.lock_tables())?;
+    let table = log_result(tables.get_mut(&id)
+        .ok_or(BackendError::argument_error("id", format!("Could not find table with id '{}'", id))))?;
+
+    let mut data = log_result(table.get_data())?;
+
+    if let Some(name) = name {
+        data.set_name(name);
+    }
+
+    if let Some(use_cost) = use_cost {
+        data.set_use_cost(use_cost);
+    }
+
+    if let Some(use_weight) = use_weight {
+        data.set_use_weight(use_weight);
+    }
+
+    if let Some(entries) = entries {
+        data.set_entries(entries);
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
 fn remove_table(state: State<AppState>, id: Uuid) -> Result<Table, BackendError> {
     log::info!("Removing table with id '{}'...", id);
     let mut tables = log_result(state.lock_tables())?;
@@ -246,6 +281,7 @@ fn main() -> Result<(), SetLoggerError> {
             get_tables,
             get_table,
             new_table,
+            update_table,
             remove_table,
             change_table_name,
             add_entries,

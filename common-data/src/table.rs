@@ -251,8 +251,16 @@ impl TableData {
         self.use_cost
     }
 
+    pub fn set_use_cost(&mut self, use_cost: bool) {
+        self.use_cost = use_cost;
+    }
+
     pub fn use_weight(&self) -> bool {
         self.use_weight
+    }
+
+    pub fn set_use_weight(&mut self, use_weight: bool) {
+        self.use_weight = use_weight;
     }
 
     pub fn id(&self) -> Uuid {
@@ -301,6 +309,18 @@ impl TableData {
 
     pub fn get_mut(&mut self, index: usize) -> Option<&mut TableEntry> {
         self.entries.get_mut(index)
+    }
+
+    pub fn entries(&self) -> &Vec<TableEntry> {
+        &self.entries
+    }
+
+    pub fn entries_mut(&mut self) -> &mut Vec<TableEntry> {
+        &mut self.entries
+    }
+
+    pub fn set_entries(&mut self, entries: Vec<TableEntry>) {
+        self.entries = entries;
     }
 
     pub fn remove(&mut self, index: usize) -> Option<TableEntry> {
