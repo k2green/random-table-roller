@@ -207,6 +207,11 @@ table.blank {
   margin-bottom: 15px;
 }
 
+table.blank.left-align tr > td:first-of-type {
+  align-items: start;
+  text-align: start;
+}
+
 table.blank tr {
   margin: 3px 0px;
 }
