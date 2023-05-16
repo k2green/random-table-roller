@@ -36,9 +36,29 @@ impl<T: Clone> UseVecStateHandle<T> {
         self.set(new_state);
     }
 
+    pub fn update_single<F: Fn(&T) -> T>(&self, index: usize, update: F) {
+        self.update(|idx, item| {
+            if idx == index {
+                update(item)
+            } else {
+                item.clone()
+            }
+        });
+    }
+
     pub fn insert(&self, item: T) {
         let mut new_vec = (*self.state).clone();
         new_vec.push(item);
+
+        self.set(new_vec);
+    }
+
+    pub fn insert_all(&self, items: Vec<T>) {
+        let mut new_vec = (*self.state).clone();
+        
+        for item in items.into_iter() {
+            new_vec.push(item);
+        }
 
         self.set(new_vec);
     }
