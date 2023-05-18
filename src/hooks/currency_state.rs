@@ -5,7 +5,7 @@ use crate::components::currency_field::CurrencyType;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct UseCurrencyStateHandle {
-    amount: UseStateHandle<u128>,
+    amount: UseStateHandle<u64>,
     currency_type: UseStateHandle<CurrencyType>
 }
 
@@ -24,15 +24,15 @@ impl UseCurrencyStateHandle {
         }
     }
 
-    pub fn amount(&self) -> u128 {
+    pub fn amount(&self) -> u64 {
         *self.amount
     }
 
-    pub fn amount_handle(&self) -> UseStateHandle<u128> {
+    pub fn amount_handle(&self) -> UseStateHandle<u64> {
         self.amount.clone()
     }
 
-    pub fn set_amount(&self, value: u128) {
+    pub fn set_amount(&self, value: u64) {
         self.amount.set(value)
     }
 
