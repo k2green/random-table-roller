@@ -1,6 +1,96 @@
-use std::{cmp::Ordering, ops::{Add, Sub, AddAssign, SubAssign}, iter::Sum};
+use std::{cmp::Ordering, ops::{Add, Sub, AddAssign, SubAssign}, iter::Sum, str::FromStr};
 
-use serde::{Serialize, Deserialize};
+use base64::{engine::general_purpose, Engine};
+use byteorder::ReadBytesExt;
+use regex::Regex;
+use serde::{Serialize, Deserialize, de::{Visitor, Error}};
+
+const BASE_64_PATTERN: &'static str = r"^([A-Za-z0-9+/]{4})*[A-Za-z0-9+/]{2}==|([A-Za-z0-9+/]{4})*[A-Za-z0-9+/]{3}=|([A-Za-z0-9+/]{4})*[A-Za-z0-9+/]{4}$";
+const FORMMATED_CURRENCY_PATTERN: &'static str = r"^\s*(\d+)\s+([csgpCSGP][pP])\s*$";
+
+#[derive(Debug, Clone)]
+pub enum ParseCurrencyError {
+    RegexError(regex::Error),
+    ParseIntError(std::num::ParseIntError),
+    Custom(String)
+}
+
+impl std::fmt::Display for ParseCurrencyError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::RegexError(e) => write!(f, "Regex error: {}", e),
+            Self::ParseIntError(e) => write!(f, "Parse error: {}", e),
+            Self::Custom(message) => write!(f, "{}", message)
+        }
+    }
+}
+
+impl std::error::Error for ParseCurrencyError {
+    fn cause(&self) -> Option<&dyn std::error::Error> {
+        match self {
+            Self::RegexError(e) => Some(e),
+            Self::ParseIntError(e) => Some(e),
+            Self::Custom(_) => None
+        }
+    }
+}
+
+impl ParseCurrencyError {
+    fn custom(message: impl Into<String>) -> Self {
+        Self::Custom(message.into())
+    }
+}
+
+pub enum CurrencyVisitorResult {
+    Base64(String),
+    Formatted(String),
+    Integer(u64)
+}
+
+struct CurrencyVisitor;
+
+impl<'de> Visitor<'de> for CurrencyVisitor {
+    type Value = CurrencyVisitorResult;
+
+    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(formatter, "Expected a base64 string, a formatted price or an integer")
+    }
+
+    fn visit_string<E>(self, v: String) -> Result<Self::Value, E>
+        where
+            E: serde::de::Error, {
+        get_result_from_str(&v).ok_or(E::custom("String was not a base64 or formatted string"))
+    }
+
+    fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+        where
+            E: serde::de::Error, {
+        get_result_from_str(v).ok_or(E::custom("String was not a base64 or formatted string"))
+    }
+
+    fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E>
+        where
+            E: serde::de::Error, {
+        Ok(CurrencyVisitorResult::Integer(v))
+    }
+}
+
+fn matches(pattern: &str, text: &str) -> bool {
+    match Regex::new(pattern) {
+        Ok(pattern) => pattern.is_match(text),
+        Err(_) => false,
+    }
+}
+
+fn get_result_from_str(text: &str) -> Option<CurrencyVisitorResult> {
+    if matches(BASE_64_PATTERN, text) {
+        Some(CurrencyVisitorResult::Base64(text.to_string()))
+    } else if matches(FORMMATED_CURRENCY_PATTERN, text) {
+        Some(CurrencyVisitorResult::Formatted(text.trim().to_string()))
+    } else {
+        None
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Currency {
@@ -8,6 +98,27 @@ pub enum Currency {
     Gold(u64),
     Silver(u64),
     Copper(u64)
+}
+
+impl FromStr for Currency {
+    type Err = ParseCurrencyError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let pattern = Regex::new(FORMMATED_CURRENCY_PATTERN).map_err(ParseCurrencyError::RegexError)?;
+        let captures = pattern.captures(s).ok_or(ParseCurrencyError::custom("Could not get capture groups"))?;
+        let amount_capture = captures.get(1).ok_or(ParseCurrencyError::custom("Could not get capture group 1"))?.as_str();
+        let currency_capture = captures.get(2).ok_or(ParseCurrencyError::custom("Could not get capture group 2"))?.as_str();
+
+        let amount = u64::from_str_radix(amount_capture, 10).map_err(ParseCurrencyError::ParseIntError)?;
+
+        match currency_capture.to_lowercase().as_str() {
+            "cp" => Ok(Self::Copper(amount)),
+            "sp" => Ok(Self::Silver(amount)),
+            "gp" => Ok(Self::Gold(amount)),
+            "pp" => Ok(Self::Platinum(amount)),
+            _ => panic!("This should be unreachable")
+        }
+    }
 }
 
 impl Serialize for Currency {
@@ -22,9 +133,35 @@ impl<'de> Deserialize<'de> for Currency {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
         where
             D: serde::Deserializer<'de> {
-        let amount = u64::deserialize(deserializer)?;
-        Ok(Currency::from(amount))
+        let data = deserializer.deserialize_any(CurrencyVisitor)?;
+        let output = match data {
+            CurrencyVisitorResult::Base64(base64) => get_currency_from_base64(&base64),
+            CurrencyVisitorResult::Formatted(formatted) => get_currency_from_formatted(&formatted),
+            CurrencyVisitorResult::Integer(value) => Ok(Currency::from(value))
+        };
+
+        output.map_err(|msg| Error::custom(msg))
     }
+}
+
+fn get_currency_from_base64(base64: &str) -> Result<Currency, String> {
+    let bytes = general_purpose::STANDARD.decode(base64).expect("Could not decode string");
+    let mut reader = bytes.as_slice();
+
+    let value = if bytes.len() > 8 {
+        reader.read_uint128::<byteorder::BigEndian>(16)
+            .map(|v| (v & 0xffffffffffffffff) as u64)
+            .map_err(|e| e.to_string())?
+    } else {
+        reader.read_u64::<byteorder::BigEndian>()
+            .map_err(|e| e.to_string())?
+    };
+
+    Ok(Currency::from(value))
+}
+
+fn get_currency_from_formatted(fromatted: &str) -> Result<Currency, String> {
+    Currency::from_str(fromatted).map_err(|e| e.to_string())
 }
 
 impl Default for Currency {
