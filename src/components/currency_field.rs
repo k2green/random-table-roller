@@ -60,7 +60,7 @@ impl CurrencyType {
     }
 }
 
-fn get_currency(amount: u128, currency_type: CurrencyType) -> Currency {
+fn get_currency(amount: u64, currency_type: CurrencyType) -> Currency {
     match currency_type {
         CurrencyType::Platinum => Currency::Platinum(amount),
         CurrencyType::Gold => Currency::Gold(amount),
@@ -82,7 +82,7 @@ pub struct CurrencyFieldProps {
 #[function_component(CurrencyField)]
 pub fn currency_field(props: &CurrencyFieldProps) -> Html {
     let CurrencyFieldProps { title, container_class, on_change } = props.clone();
-    let amount = use_state_eq(|| 1_u128);
+    let amount = use_state_eq(|| 1_u64);
     let currency_type = use_state_eq(|| CurrencyType::Copper);
 
     html! {
@@ -92,7 +92,7 @@ pub fn currency_field(props: &CurrencyFieldProps) -> Html {
 
 #[derive(Debug, Clone, PartialEq, Properties)]
 pub struct CurrencyFieldDirectProps {
-    pub amount: UseStateHandle<u128>,
+    pub amount: UseStateHandle<u64>,
     pub currency_type: UseStateHandle<CurrencyType>,
     #[prop_or_default]
     pub title: AttrValue,
@@ -111,7 +111,7 @@ pub fn currency_field(props: &CurrencyFieldDirectProps) -> Html {
         let currency_type = currency_type.clone();
         let on_change = on_change.clone();
 
-        Callback::from(move |val: u128| {
+        Callback::from(move |val: u64| {
             amount.set(val);
             on_change.emit(get_currency(val, *currency_type));
         })
@@ -130,19 +130,19 @@ pub fn currency_field(props: &CurrencyFieldDirectProps) -> Html {
 
     let validate = {
         let currency_type = currency_type.clone();
-        Callback::from(move |amount: u128| {
+        Callback::from(move |amount: u64| {
             match *currency_type {
-                CurrencyType::Copper => amount.clamp(1, u128::MAX),
-                CurrencyType::Silver => amount.clamp(1, u128::MAX / 10),
-                CurrencyType::Gold => amount.clamp(1, u128::MAX / 100),
-                CurrencyType::Platinum => amount.clamp(1, u128::MAX / 1000),
+                CurrencyType::Copper => amount.clamp(1, u64::MAX),
+                CurrencyType::Silver => amount.clamp(1, u64::MAX / 10),
+                CurrencyType::Gold => amount.clamp(1, u64::MAX / 100),
+                CurrencyType::Platinum => amount.clamp(1, u64::MAX / 1000),
             }
         })
     };
 
     html! {
         <div class={classes!(container_class, "flex-row")}>
-            <NumberField<u128> title={title} class="number" value={*amount} get_default={|_: ()| 1_u128} validate={validate} on_change={update_amount} />
+            <NumberField<u64> title={title} class="number" value={*amount} get_default={|_: ()| 1_u64} validate={validate} on_change={update_amount} />
             <SelectDirect<CurrencyType> items={Arc::new(CurrencyType::get_all())} selected_item={currency_type} on_change={update_type} />
         </div>
     }

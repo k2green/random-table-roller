@@ -1,15 +1,30 @@
 use std::{cmp::Ordering, ops::{Add, Sub, AddAssign, SubAssign}, iter::Sum};
 
-use base64::{engine::general_purpose, Engine};
-use byteorder::{ReadBytesExt, WriteBytesExt};
 use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Currency {
-    Platinum(u128),
-    Gold(u128),
-    Silver(u128),
-    Copper(u128)
+    Platinum(u64),
+    Gold(u64),
+    Silver(u64),
+    Copper(u64)
+}
+
+impl Serialize for Currency {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: serde::Serializer {
+        serializer.serialize_u64(self.to_copper().amount())
+    }
+}
+
+impl<'de> Deserialize<'de> for Currency {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: serde::Deserializer<'de> {
+        let amount = u64::deserialize(deserializer)?;
+        Ok(Currency::from(amount))
+    }
 }
 
 impl Default for Currency {
@@ -18,38 +33,13 @@ impl Default for Currency {
     }
 }
 
-impl Serialize for Currency {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: serde::Serializer {
-        let amount = self.to_copper().amount();
-        let mut bytes = Vec::<u8>::with_capacity(16);
-        bytes.write_uint128::<byteorder::BigEndian>(amount, 16).expect("Could not write u128");
-
-        serializer.serialize_str(&general_purpose::STANDARD.encode(bytes))
-    }
-}
-
-impl<'de> Deserialize<'de> for Currency {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where
-            D: serde::Deserializer<'de> {
-        let as_str = String::deserialize(deserializer)?;
-        let bytes = general_purpose::STANDARD.decode(as_str).expect("Could not decode string");
-        let mut reader = bytes.as_slice();
-        let value = reader.read_uint128::<byteorder::BigEndian>(16).expect("Could not read u128");
-
-        Ok(Currency::from(value))
-    }
-}
-
-impl From<u128> for Currency {
-    fn from(value: u128) -> Self {
+impl From<u64> for Currency {
+    fn from(value: u64) -> Self {
         Self::Copper(value).to_largest_denomination()
     }
 }
 
-impl From<Currency> for u128 {
+impl From<Currency> for u64 {
     fn from(value: Currency) -> Self {
         value.to_copper().amount()
     }
@@ -91,7 +81,7 @@ impl SubAssign<Currency> for Currency {
 
 impl Sum for Currency {
     fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
-        let mut acc = 0_u128;
+        let mut acc = 0_u64;
 
         for item in iter {
             let amount = item.to_copper().amount();
@@ -132,7 +122,7 @@ impl std::fmt::Display for Currency {
 }
 
 impl Currency {
-    pub fn with_amount(self, amount: u128) -> Self {
+    pub fn with_amount(self, amount: u64) -> Self {
         match self {
             Self::Platinum(_) => Self::Platinum(amount),
             Self::Gold(_) => Self::Gold(amount),
@@ -174,7 +164,7 @@ impl Currency {
         }
     }
 
-    pub fn amount(&self) -> u128 {
+    pub fn amount(&self) -> u64 {
         match self {
             Self::Platinum(amount) => *amount,
             Self::Gold(amount) => *amount,
@@ -220,7 +210,7 @@ impl Currency {
     }
 }
 
-fn logged_add(a: u128, b: u128) -> u128 {
+fn logged_add(a: u64, b: u64) -> u64 {
     match a.checked_add(b) {
         Some(res) => res,
         None => {
@@ -230,7 +220,7 @@ fn logged_add(a: u128, b: u128) -> u128 {
     }
 }
 
-fn logged_sub(a: u128, b: u128) -> u128 {
+fn logged_sub(a: u64, b: u64) -> u64 {
     match a.checked_sub(b) {
         Some(res) => res,
         None => {
@@ -240,7 +230,7 @@ fn logged_sub(a: u128, b: u128) -> u128 {
     }
 }
 
-fn logged_mul(a: u128, b: u128) -> u128 {
+fn logged_mul(a: u64, b: u64) -> u64 {
     match a.checked_mul(b) {
         Some(res) => res,
         None => {
@@ -250,7 +240,7 @@ fn logged_mul(a: u128, b: u128) -> u128 {
     }
 }
 
-fn logged_div(a: u128, b: u128) -> u128 {
+fn logged_div(a: u64, b: u64) -> u64 {
     match a.checked_div(b) {
         Some(res) => res,
         None => {

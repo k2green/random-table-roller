@@ -235,7 +235,7 @@ pub fn roll_results_modal(props: &RollResultsModalProps) -> Html {
         .map(|result| {
             let count = result.count();
             let cost = result.entry().cost();
-            let total_cost = Currency::from(cost.to_copper().amount() * count as u128);
+            let total_cost = Currency::from(cost.to_copper().amount() * count as u64);
 
             html! {
                 <tr>
