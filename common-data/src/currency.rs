@@ -116,7 +116,7 @@ impl FromStr for Currency {
             "sp" => Ok(Self::Silver(amount)),
             "gp" => Ok(Self::Gold(amount)),
             "pp" => Ok(Self::Platinum(amount)),
-            _ => panic!("This should be unreachable")
+            _ => Err(ParseCurrencyError::custom(format!("Unexpected currency type: {}", currency_capture)))
         }
     }
 }
