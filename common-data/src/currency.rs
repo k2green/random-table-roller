@@ -73,6 +73,48 @@ impl<'de> Visitor<'de> for CurrencyVisitor {
             E: serde::de::Error, {
         Ok(CurrencyVisitorResult::Integer(v))
     }
+
+    fn visit_u32<E>(self, v: u32) -> Result<Self::Value, E>
+        where
+            E: Error, {
+        Ok(CurrencyVisitorResult::Integer(v as u64))
+    }
+
+    fn visit_u16<E>(self, v: u16) -> Result<Self::Value, E>
+        where
+            E: Error, {
+        Ok(CurrencyVisitorResult::Integer(v as u64))
+    }
+
+    fn visit_u8<E>(self, v: u8) -> Result<Self::Value, E>
+        where
+            E: Error, {
+        Ok(CurrencyVisitorResult::Integer(v as u64))
+    }
+
+    fn visit_i64<E>(self, v: i64) -> Result<Self::Value, E>
+        where
+            E: serde::de::Error, {
+        Ok(CurrencyVisitorResult::Integer(v as u64))
+    }
+
+    fn visit_i32<E>(self, v: i32) -> Result<Self::Value, E>
+        where
+            E: Error, {
+        Ok(CurrencyVisitorResult::Integer(v as u64))
+    }
+
+    fn visit_i16<E>(self, v: i16) -> Result<Self::Value, E>
+        where
+            E: Error, {
+        Ok(CurrencyVisitorResult::Integer(v as u64))
+    }
+
+    fn visit_i8<E>(self, v: i8) -> Result<Self::Value, E>
+        where
+            E: Error, {
+        Ok(CurrencyVisitorResult::Integer(v as u64))
+    }
 }
 
 fn matches(pattern: &str, text: &str) -> bool {
